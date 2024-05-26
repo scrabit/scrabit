@@ -14,39 +14,36 @@ object AuthenticationServiceExample {
 
   object DummyAuthenticator {
 
-    private def isCorrectPassword(userId: String, password: String): Boolean = {
+    private def isCorrectPassword(userId: String, password: String): Boolean =
       userId.contains("rabbit") || password.contains("scala")
-    }
 
-    def apply(): Behavior[Login] = Behaviors.receiveMessage{
-      case Login(userId, password, connection, replyTo) =>
-        if (isCorrectPassword(userId, password)) {
-          val newSessionKey = "secret-token-used-for-secure-communication"
-          replyTo ! SessionCreated(userId, newSessionKey, connection)
-          println(s"User $userId passed authentication")
+    def apply(): Behavior[Login] = Behaviors.receiveMessage { case Login(userId, password, connection, replyTo) =>
+      if (isCorrectPassword(userId, password)) {
+        val newSessionKey = "secret-token-used-for-secure-communication"
+        replyTo ! SessionCreated(userId, newSessionKey, connection)
+        println(s"User $userId passed authentication")
 
-        } else {
-          println(s"Invalid Credentials !")
-        }
-        Behaviors.same
+      } else {
+        println(s"Invalid Credentials !")
+      }
+      Behaviors.same
     }
 
   }
 
   @main
   def start(): Unit = {
+    val root = Behaviors.setup { context =>
+      val authenticationService = context.spawnAnonymous(DummyAuthenticator())
+      context.system.receptionist ! Receptionist.Register(
+        AuthenticationServiceKey,
+        authenticationService
+      ) // Register Authentication Service with Receptionist
+      context.spawnAnonymous(WebsocketServer())
+      Behaviors.empty
+    }
 
-    // val root = Behaviors.setup { context =>
-    //   val authenticationService = context.spawnAnonymous(DummyAuthenticator())
-    //   context.system.receptionist ! Receptionist.Register(AuthenticationServiceKey, authenticationService) // Register Authentication Service with Receptionist
-    //   context.spawnAnonymous(WebsocketServer())
-    //   Behaviors.empty
-    // }
-    //
-    // ActorSystem(root, "whalah")
-    import io.circe.parser._
-    val str = """{"name": "who are you"}"""
-    println(parse(str).toOption.flatMap(x => x.asObject).map(a => a("name")))
+    ActorSystem(root, "whalah")
   }
 
 }
