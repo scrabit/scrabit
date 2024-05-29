@@ -9,32 +9,14 @@ import org.apache.pekko.actor.typed.receptionist.Receptionist
 import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
 import io.scarabit.actor.CommunicationHub
 import io.scrabit.actor.http.WebsocketServer
+import io.scrabit.actor.testkit.TestAuthenticator
 
 object AuthenticationServiceExample {
 
-  object DummyAuthenticator {
-
-    private def isCorrectPassword(userId: String, password: String): Boolean =
-      userId.contains("rabbit") || password.contains("scala")
-
-    def apply(): Behavior[Login] = Behaviors.receiveMessage { case Login(userId, password, connection, replyTo) =>
-      if (isCorrectPassword(userId, password)) {
-        val newSessionKey = "secret-token-used-for-secure-communication"
-        replyTo ! SessionCreated(userId, newSessionKey, connection)
-        println(s"User $userId passed authentication")
-
-      } else {
-        println(s"Invalid Credentials !")
-      }
-      Behaviors.same
-    }
-
-  }
-
-  @main
-  def start(): Unit = {
+  @main def start(): Unit = {
+    val dummyAuthenticator = TestAuthenticator()
     val root = Behaviors.setup { context =>
-      val authenticationService = context.spawnAnonymous(DummyAuthenticator())
+      val authenticationService = context.spawnAnonymous(dummyAuthenticator)
       context.system.receptionist ! Receptionist.Register(
         AuthenticationServiceKey,
         authenticationService

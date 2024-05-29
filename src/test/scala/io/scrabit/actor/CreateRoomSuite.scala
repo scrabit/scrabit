@@ -24,10 +24,11 @@ import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.http.scaladsl.model.ws.Message
 import org.apache.pekko.http.scaladsl.model.ws.TextMessage
 import org.scalatest.funsuite.AnyFunSuiteLike
+import io.scrabit.actor.testkit.TestAuthenticator
 
 class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
   private val testUserId = "rabbit"
-  private val sessionKey = "session-key-abc"
+  private val sessionKey = "secret-token-used-for-secure-communication"
 
   case class Hello(userId: String, message: String) extends Action {
 
@@ -63,18 +64,7 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
   }
 
   test("Login - Create Room - JoinRoom - Send Room Request") {
-    val authenticator =
-      testKit.spawn(Behaviors.receiveMessage[Login] { case Login(userId, password, connection, replyTo) =>
-        if (userId.contains("rabbit") || password.contains("scala")) {
-          replyTo ! CommunicationHub.SessionCreated(
-            userId,
-            sessionKey,
-            connection
-          )
-        }
-        Behaviors.same
-      })
-
+    val authenticator         = testKit.spawn(TestAuthenticator())
     val outgoingMesssageProbe = testKit.createTestProbe[OutgoingMessage]()
     val connection            = outgoingMesssageProbe.ref
 
