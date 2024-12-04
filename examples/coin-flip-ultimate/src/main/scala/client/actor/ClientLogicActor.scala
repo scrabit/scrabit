@@ -8,6 +8,7 @@ import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.http.scaladsl.model.ws.Message as WSMessage
 
 import scala.annotation.tailrec
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 
 object ClientLogicActor {
   case class Account(username: String, password: String)
@@ -17,19 +18,23 @@ object ClientLogicActor {
 
   case object Connected extends Message
 
-  def apply(websocketRef: ActorRef[Request], account: Account): Behavior[Msg] = Behaviors.receiveMessagePartial {
-    case Connected =>
-      println("Connected to server. trying to login...")
-      websocketRef ! Request.Login(account.username, account.password)
-      Behaviors.same
+  private object Play extends Message
 
-    case LoginSuccess(userId, sessionKey) =>
-      println(s"User $userId has logged in successfully")
-      websocketRef ! Request.CreateRoom(sessionKey, "happy")
-      new Actor(websocketRef, sessionKey).joiningRoom()
-  }
+  def apply(websocketRef: ActorRef[Request], account: Account): Behavior[Msg] = Behaviors.setup(context =>
+    Behaviors.receiveMessagePartial {
+      case Connected =>
+        println("Connected to server. trying to login...")
+        websocketRef ! Request.Login(account.username, account.password)
+        Behaviors.same
 
-  private class Actor(websocketRef: ActorRef[Request], sessionKey: String) {
+      case LoginSuccess(userId, sessionKey) =>
+        println(s"User $userId has logged in successfully")
+        websocketRef ! Request.CreateRoom(sessionKey, "happy")
+        new Actor(websocketRef, sessionKey, context).joiningRoom()
+    }
+  )
+
+  private class Actor(websocketRef: ActorRef[Request], sessionKey: String, context: ActorContext[Msg]) {
 
     @tailrec
     private def getUserChoice: String = {
@@ -42,19 +47,22 @@ object ClientLogicActor {
           getUserChoice
     }
 
-
-    def joiningRoom(): Behavior[Msg] = Behaviors.receiveMessagePartial { 
+    def joiningRoom(): Behavior[Msg] = Behaviors.receiveMessagePartial {
       case RoomJoined(userId, roomId) =>
         println(s"user $userId has joined room $roomId")
+        context.self ! Play
+        Behaviors.same
+
+      case Play =>
         val choice = getUserChoice
         if choice == "h" || choice == "head" then {
           websocketRef ! Request.CoinHead(sessionKey)
-        } else
-          websocketRef ! Request.CoinTail(sessionKey)
+        } else websocketRef ! Request.CoinTail(sessionKey)
         Behaviors.same
-        
+
       case GameResult(msg) =>
         println(msg)
+        context.self ! Play
         Behaviors.same
     }
 
