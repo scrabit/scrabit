@@ -1,30 +1,21 @@
 package io.scrabit.actor.http
 
 import io.scarabit.actor.CommunicationHub
-import io.scrabit.actor.message._
+import io.scrabit.actor.message.*
 import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
-import org.apache.pekko.actor.CoordinatedShutdown
-import org.apache.pekko.actor.typed.ActorRef
-import org.apache.pekko.actor.typed.ActorSystem
-import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.{ActorRef, ActorSystem, Behavior}
 import org.apache.pekko.actor.typed.receptionist.Receptionist
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.http.scaladsl.Http
-import org.apache.pekko.http.scaladsl.model.ws.Message
-import org.apache.pekko.http.scaladsl.model.ws.TextMessage
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.model.ws.{Message, TextMessage}
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.stream.OverflowStrategy
-import org.apache.pekko.stream.scaladsl.Flow
-import org.apache.pekko.stream.scaladsl.Keep
-import org.apache.pekko.stream.scaladsl.Sink
-import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.apache.pekko.stream.typed.scaladsl.ActorSource
-import org.apache.pekko.util.Timeout
 
 import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
+import scala.concurrent.duration.*
+import scala.util.{Failure, Success}
 
 object WebsocketServer {
 

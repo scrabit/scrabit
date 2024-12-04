@@ -24,7 +24,8 @@ object OutgoingMessage:
 
   val LOGIN_SUCCESS    = 0
   private val LOGIN_FAILED     = 1
-  private val USER_JOINED_ROOM = 2
+  val USER_JOINED_ROOM = 2
+  val ROOM_CREATED = 3
   private val USER_READY       = 5
   private val GAME_START       = 6
   private val NEW_ROUND        = 7

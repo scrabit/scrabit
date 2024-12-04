@@ -14,9 +14,9 @@ sealed trait IncomingMessage
 object IncomingMessage:
   case class RawMessage(text: String, connection: ActorRef[OutgoingMessage]) extends IncomingMessage // RawMessage -> Request / Login / discarded
   case class Request(
-    val userId: String, // userId is reliable because session is already verified
-    val tpe: Int,
-    val payload: Option[JsonObject]
+    userId: String, // userId is reliable because session is already verified
+    tpe: Int,
+    payload: Option[JsonObject]
   ) extends IncomingMessage {
 
     def toAction: Option[Action] = tpe.refineOption[Greater[9]].map(Action(userId, _, payload))
@@ -24,7 +24,7 @@ object IncomingMessage:
 
   object Request {
     private val JOIN_ROOM    = 3
-    private val CREATE_ROOM  = 4
+    val CREATE_ROOM          = 4
     private val READY        = 5
     private val PLAYER_REPLY = 8
 
@@ -57,7 +57,7 @@ object IncomingMessage:
     private val PREFIX      = "LOGIN-" // LOGIN-<userId>/<password>
     private val userIdRegex = s"$PREFIX(.+)/(.+)".r
 
-    def parseCredentials(text: String): Option[(String, String)] =
+    private def parseCredentials(text: String): Option[(String, String)] =
       userIdRegex.findFirstMatchIn(text).map(matched => (matched.group(1), matched.group(2)))
 
     def unapply(m: RawMessage): Option[(String, String, ActorRef[OutgoingMessage])] =

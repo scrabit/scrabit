@@ -37,6 +37,8 @@ object CommunicationHub:
 
   case class SetRoomBehavior(behavior: Behavior[RoomMessage]) extends InternalMessage
 
+  case class CreateSystemRoom(name: String) extends InternalMessage
+
   case class UserDisconnected(userId: String, connection: ActorRef[OutgoingMessage]) extends InternalMessage
 
   case class SessionCreated(userId: String, sessionKey: String, connection: ActorRef[OutgoingMessage]) extends InternalMessage
@@ -165,6 +167,17 @@ object CommunicationHub:
             Behaviors.same
           case Some((updatedData, roomId, ref)) =>
             context.self ! JoinRoom(owner, roomId)
+            context.log.info(s"Created room $roomName - id: $roomId")
+            apply(updatedData)
+        }
+
+      case CreateSystemRoom(roomName) =>
+        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
+        data.addRoom(spawnActor) match {
+          case None =>
+            context.log.warn("Cannot create new room: reached max room limit")
+            Behaviors.same
+          case Some((updatedData, roomId, ref)) =>
             context.log.info(s"Created room $roomName - id: $roomId")
             apply(updatedData)
         }

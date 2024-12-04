@@ -6,7 +6,7 @@ import io.circe.JsonObject
 package object message {
 
   trait RoomMessage // Request from user.
-
+// NOTE: Rename to "system message" (?)
   object RoomMessage {
 
     import io.github.iltotore.iron.*
