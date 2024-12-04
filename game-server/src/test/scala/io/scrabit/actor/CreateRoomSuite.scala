@@ -30,12 +30,7 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
   private val testUserId = "rabbit"
   private val sessionKey = "secret-token-used-for-secure-communication"
 
-  case class Hello(userId: String, message: String) extends Action {
-
-    override def payload: Option[JsonObject] = None
-
-    override def tpe: ActionType = 10
-  }
+  case class Hello(userId: String, message: String)
 
   case class NiceToMeetYa(userId: String) extends OutgoingMessage {
 
@@ -47,7 +42,7 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
   }
 
   class Game(comHub: ActorRef[CommunicationHub.Message]) {
-    val behavior: Behavior[RoomMessage] = Behaviors.receiveMessagePartial { case Hello(userId, message) =>
+    val behavior: Behavior[Hello] = Behaviors.receiveMessage { case Hello(userId, message) =>
       comHub ! NiceToMeetYa(userId)
       Behaviors.same
     }

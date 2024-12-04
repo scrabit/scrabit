@@ -18,11 +18,7 @@ package object message {
 
     case class UserJoined(userId: String) extends RoomMessage
 
-    trait Action extends RoomMessage {
-      def userId: String
-      def tpe: ActionType
-      def payload: Option[JsonObject]
-    }
+    case class Action(userId: String, tpe: ActionType, payload: Option[JsonObject]) extends RoomMessage
   }
 
   // TODO: admin request: kill room / kick user, ...

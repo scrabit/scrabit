@@ -3,14 +3,14 @@ ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "io.scrabit"
 ThisBuild / organizationName := "scrabit"
 
-val PekkoVersion     = "1.0.2"
-val PekkoHttpVersion = "1.0.1"
+val PekkoVersion     = "1.1.2"
+val PekkoHttpVersion = "1.1.0"
 val CirceVersion     = "0.14.6"
 val LogbackVersion   = "1.4.5"
 val ScalaTestVersion = "3.2.18"
 val IronVersion      = "2.5.0"
 
-lazy val root = (project in file("."))
+lazy val gameServer = (project in file("game-server"))
   .settings(
     name := "game-server",
     libraryDependencies ++= Seq(
@@ -28,3 +28,15 @@ lazy val root = (project in file("."))
       "org.scalatest"      %% "scalatest"                 % ScalaTestVersion % Test
     )
   )
+
+lazy val ticTacToe = (project in file("examples/tic-tac-toe"))
+  .settings(
+    name := "tic-tac-toe"
+  )
+  .dependsOn(gameServer)
+
+lazy val coinFlipUltimate = (project in file("examples/coin-flip-ultimate"))
+  .settings(
+    name := "coin-flip-ultimate"
+  )
+  .dependsOn(gameServer)

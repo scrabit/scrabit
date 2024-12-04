@@ -5,6 +5,9 @@ import org.apache.pekko.http.scaladsl.model.ws.Message
 import org.apache.pekko.actor.typed.ActorRef
 import io.scrabit.actor.message.RoomMessage.Action
 import io.scrabit.actor.message.RoomMessage.ActionType
+import io.github.iltotore.iron.*
+import io.github.iltotore.iron.constraint.numeric.*
+import io.github.iltotore.iron.constraint.numeric.*
 
 sealed trait IncomingMessage
 
@@ -14,8 +17,10 @@ object IncomingMessage:
     val userId: String, // userId is reliable because session is already verified
     val tpe: Int,
     val payload: Option[JsonObject]
-  ) extends IncomingMessage
-      with RoomMessage
+  ) extends IncomingMessage {
+
+    def toAction: Option[Action] = tpe.refineOption[Greater[9]].map(Action(userId, _, payload))
+  }
 
   object Request {
     private val JOIN_ROOM    = 3

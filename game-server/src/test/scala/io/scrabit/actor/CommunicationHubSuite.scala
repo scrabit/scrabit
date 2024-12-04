@@ -2,9 +2,11 @@ package io.scrabit.actor
 
 import io.scarabit.actor.CommunicationHub
 import io.scrabit.actor.message.IncomingMessage.RawMessage
+import io.scrabit.actor.message.OutgoingMessage
 import io.scrabit.actor.message.OutgoingMessage.LoginSuccess
 import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
 import io.scrabit.actor.session.AuthenticationService.Login
+import io.scrabit.actor.testkit.TestAuthenticator
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.apache.pekko.actor.testkit.typed.scaladsl.TestProbe
 import org.apache.pekko.actor.typed.ActorRef
@@ -13,8 +15,6 @@ import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.funsuite.AnyFunSuiteLike
-import io.scrabit.actor.message.OutgoingMessage
-import io.scrabit.actor.testkit.TestAuthenticator
 
 class CommunicationHubSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
 

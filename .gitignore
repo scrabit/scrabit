@@ -7,3 +7,4 @@ project/project/metals.sbt
 project/project/target
 project/project/project
 target
+.bsp/sbt.json
