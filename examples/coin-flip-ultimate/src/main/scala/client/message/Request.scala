@@ -1,18 +1,16 @@
 package client.message
 
-import org.apache.pekko.http.scaladsl.model.ws.Message
-import org.apache.pekko.http.scaladsl.model.ws.TextMessage
-import io.scrabit.actor.message.IncomingMessage.Request.*
-import io.circe.JsonObject
 import io.circe.Json
 import io.circe.syntax.*
+import io.scrabit.actor.message.IncomingMessage.Request.*
+import org.apache.pekko.http.scaladsl.model.ws.{Message, TextMessage}
 
 sealed trait Request {
   def toWsMessage: Message
 }
 
 object Request {
-  
+
   private val COIN_HEAD = 10
   private val COIN_TAIL = 11
 
@@ -43,7 +41,7 @@ object Request {
 
     override def payload: Option[Json] = Some(Json.obj("roomName" -> name.asJson))
   }
-  
+
   case class CoinHead(sessionKey: String) extends UserRequest {
     override def tpe: Int = COIN_HEAD
     override def payload: Option[Json] = None
