@@ -53,7 +53,10 @@ object WebsocketClient {
         logicRef ! ClientLogicActor.Connected
       }
     }
-    Behaviors.empty
+    Behaviors.receiveMessage{ request =>
+        publish ! request.toWsMessage
+        Behaviors.same
+    }
   }
 
 }
