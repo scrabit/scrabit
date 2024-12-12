@@ -3,7 +3,7 @@ import io.circe.Json
 import io.circe.syntax.*
 import io.scarabit.actor.CommunicationHub.{CommunicationHubServiceKey, SetRoomBehavior}
 import io.scrabit.actor.message.{OutgoingMessage, RoomMessage}
-import io.scrabit.actor.message.RoomMessage.Action
+import io.scrabit.actor.message.RoomMessage.{Action, RoomCreated}
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.apache.pekko.actor.typed.receptionist.Receptionist
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
@@ -18,7 +18,7 @@ object GameRoom {
     Behaviors.receiveMessagePartial { case CommunicationHubServiceKey.Listing(hubs) =>
       if (hubs.nonEmpty) {
         val comHub = hubs.head
-        comHub ! SetRoomBehavior(GameLogic(comHub)) // Move this logic to bootstrap actor
+        comHub ! SetRoomBehavior(GameLogic(_, comHub)) // Move this logic to bootstrap actor
       }
       Behaviors.same
 
@@ -35,8 +35,11 @@ object GameRoom {
       override def data: Json = Json.obj("message" -> message.asJson)
     }
 
-    def apply(hub: ActorRef[OutgoingMessage]): Behavior[RoomMessage] = Behaviors.setup(context =>
+    def apply(roomId: Int, hub: ActorRef[OutgoingMessage]): Behavior[RoomMessage] = Behaviors.setup(context =>
       Behaviors.receiveMessagePartial {
+        case RoomCreated(owner) =>
+          println(s"Room created by $owner")
+          Behaviors.same
         case Action(uid, actionType, payload) =>
           if (actionType == 10) {
             context.self ! CoinHead(uid)

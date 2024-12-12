@@ -1,26 +1,16 @@
 package io.scarabit.actor
 
 import io.circe.*
-import io.circe.generic.auto.*
-import io.circe.syntax.*
-import io.scrabit.actor.message.OutgoingMessage.LoginSuccess
-import io.scrabit.actor.message._
-import io.scrabit.actor.session.AuthenticationService
-import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
-import org.apache.pekko.actor.typed.*
-import org.apache.pekko.actor.typed.receptionist.Receptionist
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.http.scaladsl.model.ws.TextMessage
-import java.nio.charset.StandardCharsets
-import java.time.Instant
-import scala.util.Random
-import io.scrabit.actor.message.IncomingMessage.SessionMessage
 import io.scarabit.actor.CommunicationHub.Data.RoomIdSpace
-import org.apache.pekko.actor.typed.receptionist.ServiceKey
-import io.scrabit.actor.message.OutgoingMessage.UserJoinedRoom
-import io.scrabit.actor.message.IncomingMessage.Request
+import io.scrabit.actor.message.*
 import io.scrabit.actor.message.IncomingMessage.Request.*
-import org.apache.pekko.actor.typed.scaladsl.ActorContext
+import io.scrabit.actor.message.IncomingMessage.{Request, SessionMessage}
+import io.scrabit.actor.message.OutgoingMessage.{LoginSuccess, UserJoinedRoom}
+import io.scrabit.actor.message.RoomMessage.RoomCreated
+import io.scrabit.actor.session.AuthenticationService
+import org.apache.pekko.actor.typed.*
+import org.apache.pekko.actor.typed.receptionist.{Receptionist, ServiceKey}
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 
 object CommunicationHub:
 
@@ -35,7 +25,7 @@ object CommunicationHub:
     def joinRoom(roomId: Int): UserSession = this.copy(roomId = Some(roomId))
   }
 
-  case class SetRoomBehavior(behavior: Behavior[RoomMessage]) extends InternalMessage
+  case class SetRoomBehavior(behavior: Int => Behavior[RoomMessage]) extends InternalMessage
 
   case class CreateSystemRoom(name: String) extends InternalMessage
 
@@ -47,7 +37,7 @@ object CommunicationHub:
 
   object Data {
 
-    val defaultRoomIdSpace = new RoomIdSpace(Array.fill(10000)(true)) // 10000 rooms
+    private val defaultRoomIdSpace = new RoomIdSpace(Array.fill(10000)(true)) // 10000 rooms
 
     val empty = Data(Map.empty, Map.empty, Map.empty, defaultRoomIdSpace, Set.empty)
 
@@ -112,7 +102,7 @@ object CommunicationHub:
 
   private class Actor(
     authenticationService: ActorRef[AuthenticationService.Login],
-    roomBehavior: Behavior[RoomMessage],
+    roomBehavior: Int => Behavior[RoomMessage],
     context: ActorContext[Message]
   ) {
     def apply(data: Data): Behavior[Message] = Behaviors.receiveMessagePartial {
@@ -160,19 +150,20 @@ object CommunicationHub:
         Behaviors.same
 
       case CreateRoom(owner, roomName) =>
-        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
+        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior(roomId), s"room-${roomId}")
         data.addRoom(spawnActor) match {
           case None =>
             context.log.warn("Cannot create new room: reached max room limit")
             Behaviors.same
           case Some((updatedData, roomId, ref)) =>
             context.self ! JoinRoom(owner, roomId)
+            ref ! RoomCreated(owner)
             context.log.info(s"Created room $roomName - id: $roomId")
             apply(updatedData)
         }
 
       case CreateSystemRoom(roomName) =>
-        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
+        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior(roomId), s"room-${roomId}")
         data.addRoom(spawnActor) match {
           case None =>
             context.log.warn("Cannot create new room: reached max room limit")

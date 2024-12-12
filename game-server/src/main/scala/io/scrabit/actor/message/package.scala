@@ -14,7 +14,8 @@ package object message {
 
     type ActionType = Int :| Greater[9]
 
-    case class RoomCreated(owner: String, id: Int, ref: ActorRef[RoomMessage]) extends RoomMessage
+    //Kind of "init message" giving the context when the room is created, e.g: owner, roomId
+    case class RoomCreated(owner: String) extends RoomMessage
 
     case class UserJoined(userId: String) extends RoomMessage
 
