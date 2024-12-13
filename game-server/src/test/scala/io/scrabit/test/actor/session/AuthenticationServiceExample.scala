@@ -1,15 +1,11 @@
 package io.scrabit.test.actor.session
 
-import org.apache.pekko.actor.typed.Behavior
-import io.scrabit.actor.session.AuthenticationService.Login
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import io.scarabit.actor.CommunicationHub.SessionCreated
+import io.scrabit.actor.http.WebsocketServer
+import io.scrabit.actor.session.AuthenticationService.{AuthenticationServiceKey, Login}
+import io.scrabit.test.actor.testkit.TestAuthenticator
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.receptionist.Receptionist
-import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
-import io.scarabit.actor.CommunicationHub
-import io.scrabit.actor.http.WebsocketServer
-import io.scrabit.test.actor.testkit.TestAuthenticator
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
 object AuthenticationServiceExample {
 
