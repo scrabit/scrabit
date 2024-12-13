@@ -18,7 +18,7 @@ object GameRoom {
     Behaviors.receiveMessagePartial { case CommunicationHubServiceKey.Listing(hubs) =>
       if (hubs.nonEmpty) {
         val comHub = hubs.head
-        comHub ! SetRoomBehavior(GameLogic(_, comHub)) // Move this logic to bootstrap actor
+        comHub ! SetRoomBehavior(GameLogic(comHub)) // Move this logic to bootstrap actor
       }
       Behaviors.same
 
@@ -35,10 +35,10 @@ object GameRoom {
       override def data: Json = Json.obj("message" -> message.asJson)
     }
 
-    def apply(roomId: Int, hub: ActorRef[OutgoingMessage]): Behavior[RoomMessage] = Behaviors.setup(context =>
+    def apply(hub: ActorRef[OutgoingMessage]): Behavior[RoomMessage] = Behaviors.setup(context =>
       Behaviors.receiveMessagePartial {
-        case RoomCreated(owner) =>
-          println(s"Room created by $owner")
+        case RoomCreated(roomId, owner) =>
+          println(s"Room $roomId created by $owner")
           Behaviors.same
         case Action(uid, actionType, payload) =>
           if (actionType == 10) {
