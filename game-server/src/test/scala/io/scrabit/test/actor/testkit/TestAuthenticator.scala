@@ -1,4 +1,4 @@
-package io.scrabit.actor.testkit
+package io.scrabit.test.actor.testkit
 
 import org.apache.pekko.actor.typed.Behavior
 import io.scrabit.actor.session.AuthenticationService.Login

@@ -25,7 +25,8 @@ object CommunicationHub:
     def joinRoom(roomId: Int): UserSession = this.copy(roomId = Some(roomId))
   }
 
-  case class SetRoomBehavior(behavior: Int => Behavior[RoomMessage]) extends InternalMessage
+  case class SetRoomBehavior(behavior: Behavior[RoomMessage]) extends InternalMessage
+  
 
   case class CreateSystemRoom(name: String) extends InternalMessage
 
@@ -102,7 +103,7 @@ object CommunicationHub:
 
   private class Actor(
     authenticationService: ActorRef[AuthenticationService.Login],
-    roomBehavior: Int => Behavior[RoomMessage],
+    roomBehavior: Behavior[RoomMessage],
     context: ActorContext[Message]
   ) {
     def apply(data: Data): Behavior[Message] = Behaviors.receiveMessagePartial {
@@ -150,20 +151,20 @@ object CommunicationHub:
         Behaviors.same
 
       case CreateRoom(owner, roomName) =>
-        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior(roomId), s"room-${roomId}")
+        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
         data.addRoom(spawnActor) match {
           case None =>
             context.log.warn("Cannot create new room: reached max room limit")
             Behaviors.same
           case Some((updatedData, roomId, ref)) =>
             context.self ! JoinRoom(owner, roomId)
-            ref ! RoomCreated(owner)
+            ref ! RoomCreated(roomId, owner)
             context.log.info(s"Created room $roomName - id: $roomId")
             apply(updatedData)
         }
 
       case CreateSystemRoom(roomName) =>
-        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior(roomId), s"room-${roomId}")
+        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
         data.addRoom(spawnActor) match {
           case None =>
             context.log.warn("Cannot create new room: reached max room limit")

@@ -15,7 +15,7 @@ package object message {
     type ActionType = Int :| Greater[9]
 
     //Kind of "init message" giving the context when the room is created, e.g: owner, roomId
-    case class RoomCreated(owner: String) extends RoomMessage
+    case class RoomCreated(id: Int, owner: String) extends RoomMessage
 
     case class UserJoined(userId: String) extends RoomMessage
 

@@ -1,9 +1,8 @@
 package io.scrabit.actor.message
 
-import org.apache.pekko.http.scaladsl.model.ws.Message
-import io.circe.Json, io.circe.syntax._
-import io.circe.JsonObject
-import org.apache.pekko.http.scaladsl.model.ws.TextMessage
+import io.circe.Json
+import io.circe.syntax.*
+import org.apache.pekko.http.scaladsl.model.ws.{Message, TextMessage}
 
 trait OutgoingMessage {
   def userId: String

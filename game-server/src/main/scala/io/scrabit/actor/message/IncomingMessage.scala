@@ -1,13 +1,11 @@
 package io.scrabit.actor.message
 
-import io.circe._, io.circe.syntax._, io.circe.generic.semiauto._, io.circe.parser._
-import org.apache.pekko.http.scaladsl.model.ws.Message
-import org.apache.pekko.actor.typed.ActorRef
-import io.scrabit.actor.message.RoomMessage.Action
-import io.scrabit.actor.message.RoomMessage.ActionType
+import io.circe.*
+import io.circe.parser.*
 import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.numeric.*
-import io.github.iltotore.iron.constraint.numeric.*
+import io.scrabit.actor.message.RoomMessage.Action
+import org.apache.pekko.actor.typed.ActorRef
 
 sealed trait IncomingMessage
 
