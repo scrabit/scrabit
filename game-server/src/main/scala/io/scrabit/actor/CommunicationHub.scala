@@ -1,6 +1,5 @@
 package io.scarabit.actor
 
-import io.circe.*
 import io.scarabit.actor.CommunicationHub.Data.RoomIdSpace
 import io.scrabit.actor.message.*
 import io.scrabit.actor.message.IncomingMessage.Request.*
