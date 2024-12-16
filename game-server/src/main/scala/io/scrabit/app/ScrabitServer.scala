@@ -3,8 +3,6 @@ package io.scrabit.app
 import io.scrabit.actor.http.WebsocketServer
 import io.scrabit.actor.message.RoomMessage
 import io.scrabit.actor.session.AuthenticationService
-import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
-import org.apache.pekko.actor.typed.receptionist.Receptionist
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorSystem, Behavior}
 

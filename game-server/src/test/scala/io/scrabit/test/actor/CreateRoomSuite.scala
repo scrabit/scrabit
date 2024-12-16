@@ -52,7 +52,7 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
           comHub ! NiceToMeetYa(userId)
           Behaviors.same
 
-        case msg @ RoomCreated(id, owner) =>
+        case msg @ RoomCreated(id, owner, hub) =>
           probe ! msg
           context.log.debug(s"Room $id created by $owner")
           Behaviors.same
@@ -72,12 +72,12 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
     val authenticator = testKit.spawn(
       Behaviors.empty[Login]
     ) // Authenticator is not involved in Room creation
-    
+
     val gameLogic = Behaviors.receiveMessage[RoomMessage]{msg =>
         probe ! msg
         Behaviors.same
       }
-    
+
     val commHub = testKit.spawn(CommunicationHub.create(authenticator, gameLogic))
 
     commHub ! TestRequest.createRoom(testUserId, "HappyRoom")

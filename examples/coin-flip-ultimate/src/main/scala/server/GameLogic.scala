@@ -3,7 +3,6 @@ import io.circe.Json
 import io.circe.syntax.*
 import io.scrabit.actor.message.RoomMessage.{Action, RoomCreated}
 import io.scrabit.actor.message.{OutgoingMessage, RoomMessage}
-import org.apache.pekko.actor.typed.receptionist.Receptionist
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 
@@ -18,13 +17,13 @@ object GameLogic {
 
       override def data: Json = Json.obj("message" -> message.asJson)
     }
-    
+
     val initialization: Behavior[RoomMessage] = Behaviors.receiveMessage{
       case RoomCreated(id, owner, commHub) =>
         active(commHub)
     }
 
-    def active(hub: ActorRef[OutgoingMessage]): Behavior[RoomMessage] = Behaviors.setup(context =>
+    private def active(hub: ActorRef[OutgoingMessage]): Behavior[RoomMessage] = Behaviors.setup(context =>
       Behaviors.receiveMessagePartial {
         case Action(uid, actionType, payload) =>
           if (actionType == 10) {
