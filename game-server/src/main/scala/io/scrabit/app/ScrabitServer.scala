@@ -18,9 +18,7 @@ trait ScrabitServer {
   private def start(): Unit = {
     val root = Behaviors.setup { context =>
       val authenticationService = context.spawnAnonymous(authenticator)
-      context.system.receptionist ! Receptionist.Register(AuthenticationServiceKey, authenticationService)
-      context.spawnAnonymous(WebsocketServer())
-      context.spawnAnonymous(gameLogic)
+      context.spawnAnonymous(WebsocketServer(authenticationService, gameLogic))
       Behaviors.empty
     }
     ActorSystem(root, actorSystem)

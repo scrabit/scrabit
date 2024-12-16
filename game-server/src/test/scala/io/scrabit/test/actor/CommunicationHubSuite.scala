@@ -4,23 +4,25 @@ import io.scarabit.actor.CommunicationHub
 import io.scrabit.actor.message.IncomingMessage.RawMessage
 import io.scrabit.actor.message.OutgoingMessage
 import io.scrabit.actor.message.OutgoingMessage.LoginSuccess
+import io.scrabit.test.actor.message.TestRequest
 import io.scrabit.test.actor.testkit.TestAuthenticator
 import org.apache.pekko.actor.testkit.typed.scaladsl.{ScalaTestWithActorTestKit, TestProbe}
 import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.javadsl.Behaviors
 import org.scalatest.funsuite.AnyFunSuiteLike
 
 class CommunicationHubSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
 
   private val authenticator       = TestAuthenticator()
   private val authenticatorRef    = testKit.spawn(authenticator)
-  private val communicationHubRef = testKit.spawn(CommunicationHub.create(authenticatorRef))
+  private val communicationHubRef = testKit.spawn(CommunicationHub.create(authenticatorRef, Behaviors.empty))
 
   private def assertLogin(commHub: ActorRef[RawMessage], username: String, password: String)(
     expectation: TestProbe[OutgoingMessage] => Unit
   ): Unit = {
     val probe      = testKit.createTestProbe[OutgoingMessage]()
     val connection = probe.ref
-    commHub ! RawMessage(s"LOGIN-$username/$password", connection)
+    commHub ! TestRequest.login(username, password, connection)
     expectation(probe)
   }
 

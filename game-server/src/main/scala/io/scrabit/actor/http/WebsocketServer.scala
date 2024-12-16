@@ -2,6 +2,7 @@ package io.scrabit.actor.http
 
 import io.scarabit.actor.CommunicationHub
 import io.scrabit.actor.message.*
+import io.scrabit.actor.session.AuthenticationService
 import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
 import org.apache.pekko.actor.typed.{ActorRef, ActorSystem, Behavior}
 import org.apache.pekko.actor.typed.receptionist.Receptionist
@@ -40,21 +41,13 @@ object WebsocketServer {
      )
   }
 
-  def apply(): Behavior[Nothing] = Behaviors.setup[Receptionist.Listing] { context =>
-      
-      context.system.receptionist ! Receptionist.Subscribe(AuthenticationServiceKey, context.self)
-
-      context.log.debug("Waiting for AuthenticationService")
-
-      Behaviors.receiveMessagePartial[Receptionist.Listing]{
-        case AuthenticationServiceKey.Listing(listings) =>
-          if (listings.nonEmpty) {
-            context.log.info(s"Found Authentication service ${listings.head}")
+  def apply(authenticator: ActorRef[AuthenticationService.Login],
+            gameLogic: Behavior[RoomMessage]
+           ): Behavior[Nothing] = Behaviors.setup{ context =>
             val port = 8080
             implicit val system: ActorSystem[Nothing] = context.system
             implicit val executionContext: ExecutionContextExecutor = context.executionContext
-            val communicationHub = context.spawn(CommunicationHub.create(listings.head), "communication-hub")
-
+            val communicationHub = context.spawn(CommunicationHub.create(authenticator, gameLogic), "communication-hub")
             Http().newServerAt("localhost", port)
               .bind(route(communicationHub, context.log.debug))
               .andThen{
@@ -63,11 +56,5 @@ object WebsocketServer {
                   context.log.error(s"Failed To start Websocket Server : ${exception.getMessage()}")
               }
             Behaviors.empty
-          } else {
-            context.log.warn("No AuthenticationService found in the system. Make sure you registered it to the Receptionist")
-            Behaviors.same
-          }
       }
-   }.narrow
-
 }

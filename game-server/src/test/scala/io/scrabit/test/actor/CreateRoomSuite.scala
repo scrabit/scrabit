@@ -72,11 +72,13 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
     val authenticator = testKit.spawn(
       Behaviors.empty[Login]
     ) // Authenticator is not involved in Room creation
-    val commHub = testKit.spawn(CommunicationHub.create(authenticator))
-    commHub ! CommunicationHub.SetRoomBehavior(Behaviors.receiveMessage{msg =>
-       probe ! msg
-       Behaviors.same
-    })
+    
+    val gameLogic = Behaviors.receiveMessage[RoomMessage]{msg =>
+        probe ! msg
+        Behaviors.same
+      }
+    
+    val commHub = testKit.spawn(CommunicationHub.create(authenticator, gameLogic))
 
     commHub ! TestRequest.createRoom(testUserId, "HappyRoom")
     probe.expectMessageType[RoomCreated]
@@ -88,9 +90,10 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
 
     val roomMessageProbe = testKit.createTestProbe[RoomMessage]()
 
-    val commHub = testKit.spawn(CommunicationHub.create(authenticator))
-
-    commHub ! CommunicationHub.SetRoomBehavior(Game(commHub, roomMessageProbe.ref).behavior)
+    val commHub: ActorRef[CommunicationHub.Message] = testKit.spawn(Behaviors.setup{context =>
+      val gameLogic = Game(context.self, roomMessageProbe.ref).behavior
+      CommunicationHub.create(authenticator, gameLogic)
+    })
 
     commHub ! TestRequest.login(testUserId, "pscalassword", outgoingMessageProbe.ref)
 

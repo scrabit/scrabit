@@ -2,6 +2,7 @@ package io.scrabit.actor
 
 import org.apache.pekko.actor.typed.ActorRef
 import io.circe.JsonObject
+import io.scarabit.actor.CommunicationHub
 
 package object message {
 
@@ -15,7 +16,7 @@ package object message {
     type ActionType = Int :| Greater[9]
 
     //Kind of "init message" giving the context when the room is created, e.g: owner, roomId
-    case class RoomCreated(id: Int, owner: String) extends RoomMessage
+    case class RoomCreated(id: Int, owner: String, commHub: ActorRef[CommunicationHub.Message]) extends RoomMessage
 
     case class UserJoined(userId: String) extends RoomMessage
 

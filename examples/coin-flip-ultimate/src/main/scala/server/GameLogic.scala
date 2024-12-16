@@ -1,31 +1,15 @@
 package server
 import io.circe.Json
 import io.circe.syntax.*
-import io.scarabit.actor.CommunicationHub.{CommunicationHubServiceKey, SetRoomBehavior}
-import io.scrabit.actor.message.{OutgoingMessage, RoomMessage}
 import io.scrabit.actor.message.RoomMessage.{Action, RoomCreated}
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import io.scrabit.actor.message.{OutgoingMessage, RoomMessage}
 import org.apache.pekko.actor.typed.receptionist.Receptionist
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 
 import scala.util.Random
 
-object GameRoom {
-
-  def apply(): Behavior[RoomMessage | Receptionist.Listing] = Behaviors.setup { context =>
-
-    context.system.receptionist ! Receptionist.Subscribe(CommunicationHubServiceKey, context.self)
-    Behaviors.receiveMessagePartial { case CommunicationHubServiceKey.Listing(hubs) =>
-      if (hubs.nonEmpty) {
-        val comHub = hubs.head
-        comHub ! SetRoomBehavior(GameLogic(comHub)) // Move this logic to bootstrap actor
-      }
-      Behaviors.same
-
-    }
-  }
-
-  object GameLogic {
+object GameLogic {
     case class CoinHead(uid: String) extends RoomMessage
     case class CoinTail(uid: String) extends RoomMessage
 
@@ -34,12 +18,14 @@ object GameRoom {
 
       override def data: Json = Json.obj("message" -> message.asJson)
     }
+    
+    val initialization: Behavior[RoomMessage] = Behaviors.receiveMessage{
+      case RoomCreated(id, owner, commHub) =>
+        active(commHub)
+    }
 
-    def apply(hub: ActorRef[OutgoingMessage]): Behavior[RoomMessage] = Behaviors.setup(context =>
+    def active(hub: ActorRef[OutgoingMessage]): Behavior[RoomMessage] = Behaviors.setup(context =>
       Behaviors.receiveMessagePartial {
-        case RoomCreated(roomId, owner) =>
-          println(s"Room $roomId created by $owner")
-          Behaviors.same
         case Action(uid, actionType, payload) =>
           if (actionType == 10) {
             context.self ! CoinHead(uid)
@@ -61,7 +47,4 @@ object GameRoom {
           Behaviors.same
       }
     )
-
-  }
-
 }

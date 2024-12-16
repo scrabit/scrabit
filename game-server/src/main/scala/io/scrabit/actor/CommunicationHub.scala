@@ -24,9 +24,6 @@ object CommunicationHub:
     def joinRoom(roomId: Int): UserSession = this.copy(roomId = Some(roomId))
   }
 
-  case class SetRoomBehavior(behavior: Behavior[RoomMessage]) extends InternalMessage
-  
-
   case class CreateSystemRoom(name: String) extends InternalMessage
 
   case class UserDisconnected(userId: String, connection: ActorRef[OutgoingMessage]) extends InternalMessage
@@ -91,13 +88,11 @@ object CommunicationHub:
 
   }
 
-  def create(authenticationService: ActorRef[AuthenticationService.Login]): Behavior[Message] = Behaviors.setup { context =>
+  def create(authenticator: ActorRef[AuthenticationService.Login],
+             roomBehavior: Behavior[RoomMessage], 
+            ): Behavior[Message] = Behaviors.setup { context =>
     context.system.receptionist ! Receptionist.Register(CommunicationHubServiceKey, context.self)
-    Behaviors.receiveMessagePartial { case SetRoomBehavior(behavior) =>
-      context.log.info("Set Room behavior")
-      Actor(authenticationService, behavior, context)(Data.empty)
-
-    }
+    Actor(authenticator, roomBehavior, context)(Data.empty)
   }
 
   private class Actor(
@@ -157,7 +152,7 @@ object CommunicationHub:
             Behaviors.same
           case Some((updatedData, roomId, ref)) =>
             context.self ! JoinRoom(owner, roomId)
-            ref ! RoomCreated(roomId, owner)
+            ref ! RoomCreated(roomId, owner, context.self)
             context.log.info(s"Created room $roomName - id: $roomId")
             apply(updatedData)
         }

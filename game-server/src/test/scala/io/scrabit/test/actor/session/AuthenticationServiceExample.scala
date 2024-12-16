@@ -12,12 +12,8 @@ object AuthenticationServiceExample {
   @main def start(): Unit = {
     val dummyAuthenticator = TestAuthenticator()
     val root = Behaviors.setup { context =>
-      val authenticationService = context.spawnAnonymous(dummyAuthenticator)
-      context.system.receptionist ! Receptionist.Register(
-        AuthenticationServiceKey,
-        authenticationService
-      ) // Register Authentication Service with Receptionist
-      context.spawnAnonymous(WebsocketServer())
+      val auth = context.spawnAnonymous(dummyAuthenticator)
+      context.spawnAnonymous(WebsocketServer(auth, Behaviors.empty))
       Behaviors.empty
     }
 
