@@ -7,7 +7,7 @@ val PekkoVersion     = "1.1.2"
 val PekkoHttpVersion = "1.1.0"
 val CirceVersion     = "0.14.10"
 val LogbackVersion   = "1.4.5"
-val ScalaTestVersion = "3.2.18"
+val ScalaTestVersion = "3.2.19"
 val IronVersion      = "2.6.0"
 
 lazy val gameServer = (project in file("game-server"))

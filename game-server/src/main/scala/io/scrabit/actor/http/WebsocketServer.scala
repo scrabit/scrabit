@@ -3,10 +3,8 @@ package io.scrabit.actor.http
 import io.scarabit.actor.CommunicationHub
 import io.scrabit.actor.message.*
 import io.scrabit.actor.session.AuthenticationService
-import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
-import org.apache.pekko.actor.typed.{ActorRef, ActorSystem, Behavior}
-import org.apache.pekko.actor.typed.receptionist.Receptionist
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, ActorSystem, Behavior}
 import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.http.scaladsl.model.ws.{Message, TextMessage}
 import org.apache.pekko.http.scaladsl.server.Directives.*
