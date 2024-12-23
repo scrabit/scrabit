@@ -1,7 +1,8 @@
 package io.scrabit.test.actor.session
 
 import io.scrabit.actor.http.WebsocketServer
-import io.scrabit.actor.session.AuthenticationService.{AuthenticationServiceKey, Login}
+import io.scrabit.actor.session.AuthenticationService.AuthenticationServiceKey
+import io.scrabit.actor.session.AuthenticationService.Login
 import io.scrabit.test.actor.testkit.TestAuthenticator
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.receptionist.Receptionist

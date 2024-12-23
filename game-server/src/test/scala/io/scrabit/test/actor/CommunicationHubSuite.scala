@@ -6,7 +6,8 @@ import io.scrabit.actor.message.OutgoingMessage
 import io.scrabit.actor.message.OutgoingMessage.LoginSuccess
 import io.scrabit.test.actor.message.TestRequest
 import io.scrabit.test.actor.testkit.TestAuthenticator
-import org.apache.pekko.actor.testkit.typed.scaladsl.{ScalaTestWithActorTestKit, TestProbe}
+import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.apache.pekko.actor.testkit.typed.scaladsl.TestProbe
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.javadsl.Behaviors
 import org.scalatest.funsuite.AnyFunSuiteLike

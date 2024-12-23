@@ -1,20 +1,26 @@
 package io.scrabit.test.actor
 
-import io.github.iltotore.iron.*
-import io.github.iltotore.iron.constraint.numeric.*
 import io.circe.Json
 import io.circe.syntax.*
+import io.github.iltotore.iron.*
+import io.github.iltotore.iron.constraint.numeric.*
 import io.scrabit.actor.CommunicationHub
 import io.scrabit.actor.message.IncomingMessage.Request
-import io.scrabit.actor.message.OutgoingMessage.{LoginSuccess, UserJoinedRoom}
-import io.scrabit.actor.message.RoomMessage.{Action, ActionType, RoomCreated, UserJoined}
-import io.scrabit.actor.message.{OutgoingMessage, RoomMessage}
+import io.scrabit.actor.message.OutgoingMessage
+import io.scrabit.actor.message.OutgoingMessage.LoginSuccess
+import io.scrabit.actor.message.OutgoingMessage.UserJoinedRoom
+import io.scrabit.actor.message.RoomMessage
+import io.scrabit.actor.message.RoomMessage.Action
+import io.scrabit.actor.message.RoomMessage.ActionType
+import io.scrabit.actor.message.RoomMessage.RoomCreated
+import io.scrabit.actor.message.RoomMessage.UserJoined
 import io.scrabit.actor.session.AuthenticationService.Login
 import io.scrabit.test.actor.message.TestRequest
 import io.scrabit.test.actor.testkit.TestAuthenticator
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import org.scalatest.funsuite.AnyFunSuiteLike
 
 class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
