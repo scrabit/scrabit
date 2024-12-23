@@ -3,7 +3,7 @@ package io.scrabit.test.actor.testkit
 import org.apache.pekko.actor.typed.Behavior
 import io.scrabit.actor.session.AuthenticationService.Login
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import io.scarabit.actor.CommunicationHub.SessionCreated
+import io.scrabit.actor.CommunicationHub.SessionCreated
 
 object TestAuthenticator {
   private def isCorrectPassword(userId: String, password: String): Boolean =

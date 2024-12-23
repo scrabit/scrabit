@@ -1,6 +1,6 @@
-package io.scarabit.actor
+package io.scrabit.actor
 
-import io.scarabit.actor.CommunicationHub.Data.RoomIdSpace
+import io.scrabit.actor.CommunicationHub.Data.RoomIdSpace
 import io.scrabit.actor.message.*
 import io.scrabit.actor.message.IncomingMessage.Request.*
 import io.scrabit.actor.message.IncomingMessage.{Request, SessionMessage}

@@ -9,12 +9,15 @@ object CFClient {
 
   @main def play(): Unit = {
     val testAccount = Account("rabbit", "ilovescala")
-    val serverHost = "ws://localhost:8080"
+    val serverHost  = "ws://localhost:8080"
 
-    ActorSystem(Behaviors.setup{context =>
-       context.spawnAnonymous(WebsocketClient(serverHost, testAccount))
-       Behaviors.empty
-    }, "client")
+    ActorSystem(
+      Behaviors.setup { context =>
+        context.spawnAnonymous(WebsocketClient(serverHost, testAccount))
+        Behaviors.empty
+      },
+      "client"
+    )
   }
 
 }

@@ -4,7 +4,7 @@ import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.numeric.*
 import io.circe.Json
 import io.circe.syntax.*
-import io.scarabit.actor.CommunicationHub
+import io.scrabit.actor.CommunicationHub
 import io.scrabit.actor.message.IncomingMessage.Request
 import io.scrabit.actor.message.OutgoingMessage.{LoginSuccess, UserJoinedRoom}
 import io.scrabit.actor.message.RoomMessage.{Action, ActionType, RoomCreated, UserJoined}
@@ -24,17 +24,23 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
   object Hello {
     val ACTION_TYPE: ActionType = 10
     def apply(userId: String, message: String): Request =
-      TestRequest.action(userId, ACTION_TYPE, Json.obj(
-        "message" -> message.asJson
-      ).asObject)
-      
+      TestRequest.action(
+        userId,
+        ACTION_TYPE,
+        Json
+          .obj(
+            "message" -> message.asJson
+          )
+          .asObject
+      )
+
     def unapply(action: Action): Option[(String, String)] =
       if action.tpe != ACTION_TYPE then None
-      else for {
-        messageJson <- action.payload.flatMap(_.apply("message"))
-        message <- messageJson.asString 
-      } yield (action.userId, message)
-
+      else
+        for {
+          messageJson <- action.payload.flatMap(_.apply("message"))
+          message     <- messageJson.asString
+        } yield (action.userId, message)
 
   }
 
@@ -64,7 +70,8 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
         case msg @ _ =>
           probe ! msg
           Behaviors.same
-    })
+      }
+    )
   }
 
   test("Create new room") {
@@ -73,10 +80,10 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
       Behaviors.empty[Login]
     ) // Authenticator is not involved in Room creation
 
-    val gameLogic = Behaviors.receiveMessage[RoomMessage]{msg =>
-        probe ! msg
-        Behaviors.same
-      }
+    val gameLogic = Behaviors.receiveMessage[RoomMessage] { msg =>
+      probe ! msg
+      Behaviors.same
+    }
 
     val commHub = testKit.spawn(CommunicationHub.create(authenticator, gameLogic))
 
@@ -85,12 +92,12 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
   }
 
   test("Login --> Create Room --> JoinRoom --> Room Request/Response") {
-    val authenticator         = testKit.spawn(TestAuthenticator())
+    val authenticator        = testKit.spawn(TestAuthenticator())
     val outgoingMessageProbe = testKit.createTestProbe[OutgoingMessage]()
 
     val roomMessageProbe = testKit.createTestProbe[RoomMessage]()
 
-    val commHub: ActorRef[CommunicationHub.Message] = testKit.spawn(Behaviors.setup{context =>
+    val commHub: ActorRef[CommunicationHub.Message] = testKit.spawn(Behaviors.setup { context =>
       val gameLogic = Game(context.self, roomMessageProbe.ref).behavior
       CommunicationHub.create(authenticator, gameLogic)
     })
@@ -104,7 +111,7 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
     roomMessageProbe.expectMessageType[RoomCreated]
 
     outgoingMessageProbe.expectMessageType[UserJoinedRoom]
-    
+
     commHub ! Hello(testUserId, "Wow")
 
     outgoingMessageProbe.expectMessage(NiceToMeetYa(testUserId))

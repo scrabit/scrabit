@@ -3,7 +3,7 @@ package io.scrabit.actor.testkit
 import org.apache.pekko.actor.typed.Behavior
 import io.scrabit.actor.session.AuthenticationService.Login
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import io.scarabit.actor.CommunicationHub.SessionCreated
+import io.scrabit.actor.CommunicationHub.SessionCreated
 import io.scrabit.actor.message.OutgoingMessage.LoginFailed
 
 object CFAuthenticator {

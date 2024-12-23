@@ -1,6 +1,6 @@
 package io.scrabit.test.actor
 
-import io.scarabit.actor.CommunicationHub
+import io.scrabit.actor.CommunicationHub
 import io.scrabit.actor.message.IncomingMessage.RawMessage
 import io.scrabit.actor.message.OutgoingMessage
 import io.scrabit.actor.message.OutgoingMessage.LoginSuccess
