@@ -1,11 +1,11 @@
 package io.scrabit.actor.testkit
 
-import org.apache.pekko.actor.typed.Behavior
-import io.scrabit.actor.session.AuthenticationService.{AuthenticationServiceKey, Login}
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import io.scrabit.actor.CommunicationHub.SessionCreated
 import io.scrabit.actor.message.OutgoingMessage.LoginFailed
 import io.scrabit.actor.session.AuthenticationService
+import io.scrabit.actor.session.AuthenticationService.Login
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
 object CFAuthenticator {
   private def isCorrectPassword(userId: String, password: String): Boolean =

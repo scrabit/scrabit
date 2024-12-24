@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
 
 object WebsocketServer {
 
-  private def route(commHub: ActorRef[IncomingMessage], log: String => Unit)(using actorSystem: ActorSystem[_], ec: ExecutionContextExecutor) =
+  private def route(commHub: ActorRef[IncomingMessage], log: String => Unit)(using ActorSystem[?]) =
     path("") {
       val (actorRef, publisher) = ActorSource
         .actorRef[OutgoingMessage](
