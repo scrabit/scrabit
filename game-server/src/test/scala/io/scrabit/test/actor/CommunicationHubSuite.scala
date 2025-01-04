@@ -11,6 +11,8 @@ import org.apache.pekko.actor.testkit.typed.scaladsl.TestProbe
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.javadsl.Behaviors
 import org.scalatest.funsuite.AnyFunSuiteLike
+import io.github.iltotore.iron.constraint.numeric.*
+import io.github.iltotore.iron.*
 
 class CommunicationHubSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
 
@@ -41,4 +43,11 @@ class CommunicationHubSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
     assertLogin(communicationHubRef, "wolf", "openthedoornow") { probe =>
       probe.expectNoMessage()
     }
+  }
+
+  test("Send message with invalid session key") { // FIXME: this test case is not good enough because there won't be any response even if the session key is valid
+    val probe      = testKit.createTestProbe[OutgoingMessage]()
+    val connection = probe.ref
+    communicationHubRef ! TestRequest.sessionMessage("rabbit1", 10, "invalid-session-key", connection)
+    probe.expectNoMessage()
   }

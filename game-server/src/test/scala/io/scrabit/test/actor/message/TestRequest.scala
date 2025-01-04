@@ -6,6 +6,8 @@ import io.scrabit.actor.message.IncomingMessage.{RawMessage, Request}
 import io.scrabit.actor.message.RoomMessage.ActionType
 import io.scrabit.actor.message.{IncomingMessage, OutgoingMessage}
 import org.apache.pekko.actor.typed.ActorRef
+import io.scrabit.actor.message.RoomMessage.Action
+import io.scrabit.actor.message.RoomMessage.given
 
 object TestRequest {
 
@@ -17,4 +19,8 @@ object TestRequest {
 
   def action(userId: String, tpe: ActionType, data: Option[JsonObject]): Request =
     Request(userId, tpe, data)
+
+  def sessionMessage(userId: String, tpe: ActionType, sessionKey: String, connection: ActorRef[OutgoingMessage]): RawMessage =
+    val textData = Json.obj("userId" -> userId.asJson, "sessionKey" -> sessionKey.asJson, "tpe" -> tpe.asJson).noSpaces
+    RawMessage(textData, connection)
 }

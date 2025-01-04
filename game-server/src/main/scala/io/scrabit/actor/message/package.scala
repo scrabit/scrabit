@@ -5,6 +5,7 @@ import io.circe.JsonObject
 import io.scrabit.actor.CommunicationHub
 
 import java.util.function.Consumer
+import io.circe.Encoder
 
 package object message {
 
@@ -17,6 +18,7 @@ package object message {
     import io.github.iltotore.iron.constraint.numeric.*
 
     type ActionType = Int :| Greater[9]
+    given Encoder[ActionType] = Encoder.encodeInt.contramap(identity)
 
     // Kind of "init message" giving the context when the room is created, e.g: owner, roomId
     case class RoomCreated(id: Int, owner: String, commHub: ActorRef[CommunicationHub.Message]) extends RoomMessage
