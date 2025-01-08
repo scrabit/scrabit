@@ -88,11 +88,9 @@ object CommunicationHub:
 
   }
 
-  def create(authenticator: ActorRef[AuthenticationService.Login],
-             roomBehavior: Behavior[RoomMessage], 
-            ): Behavior[Message] = Behaviors.setup { context =>
-    context.system.receptionist ! Receptionist.Register(CommunicationHubServiceKey, context.self)
-    Actor(authenticator, roomBehavior, context)(Data.empty)
+  def create(authenticator: ActorRef[AuthenticationService.Login], roomBehavior: Behavior[RoomMessage]): Behavior[Message] = Behaviors.setup {
+    context =>
+      Actor(authenticator, roomBehavior, context)(Data.empty)
   }
 
   private class Actor(
