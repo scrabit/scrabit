@@ -22,6 +22,8 @@ import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.scalatest.funsuite.AnyFunSuiteLike
+import io.scrabit.actor.message.LobbyMessage
+import io.scrabit.actor.CommunicationHub.CreateRoomGame
 
 class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
   private val testUserId = "rabbit"
@@ -57,16 +59,30 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
     override def tpe: Int = 10
   }
 
+  object Lobby {
+
+    def apply(comHub: ActorRef[CommunicationHub.Message], probe: ActorRef[LobbyMessage | RoomMessage]): Behavior[LobbyMessage] =
+      Behaviors.receiveMessage {
+        case msg @ LobbyMessage.CreateRoomRequest(userId, roomName) =>
+          probe ! msg
+          comHub ! CreateRoomGame(userId, roomName, new Game(comHub, probe).behavior)
+          Behaviors.same
+        case LobbyMessage.Init(_) =>
+          // avoid fowarding Init message to probe
+          Behaviors.same
+
+        case msg @ _ =>
+          probe ! msg
+          Behaviors.same
+      }
+
+  }
+
   class Game(comHub: ActorRef[CommunicationHub.Message], probe: ActorRef[RoomMessage]) {
     val behavior: Behavior[RoomMessage] = Behaviors.setup(context =>
       Behaviors.receiveMessage {
         case Hello(userId, message) =>
           comHub ! NiceToMeetYa(userId)
-          Behaviors.same
-
-        case msg @ RoomCreated(id, owner, hub) =>
-          probe ! msg
-          context.log.debug(s"Room $id created by $owner")
           Behaviors.same
 
         case UserJoined(userId) =>
@@ -80,32 +96,15 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
     )
   }
 
-  test("Create new room") {
-    val probe = testKit.createTestProbe[RoomMessage]()
-    val authenticator = testKit.spawn(
-      Behaviors.empty[Login]
-    ) // Authenticator is not involved in Room creation
-
-    val gameLogic = Behaviors.receiveMessage[RoomMessage] { msg =>
-      probe ! msg
-      Behaviors.same
-    }
-
-    val commHub = testKit.spawn(CommunicationHub.create(authenticator, gameLogic))
-
-    commHub ! TestRequest.createRoom(testUserId, "HappyRoom")
-    probe.expectMessageType[RoomCreated]
-  }
-
   test("Login --> Create Room --> JoinRoom --> Room Request/Response") {
     val authenticator        = testKit.spawn(TestAuthenticator())
     val outgoingMessageProbe = testKit.createTestProbe[OutgoingMessage]()
 
-    val roomMessageProbe = testKit.createTestProbe[RoomMessage]()
+    val roomMessageProbe = testKit.createTestProbe[LobbyMessage | RoomMessage]()
 
     val commHub: ActorRef[CommunicationHub.Message] = testKit.spawn(Behaviors.setup { context =>
-      val gameLogic = Game(context.self, roomMessageProbe.ref).behavior
-      CommunicationHub.create(authenticator, gameLogic)
+      val lobby = testKit.spawn(Lobby(context.self, roomMessageProbe.ref))
+      CommunicationHub.create(authenticator, lobby)
     })
 
     commHub ! TestRequest.login(testUserId, "pscalassword", outgoingMessageProbe.ref)
@@ -114,7 +113,11 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
 
     commHub ! TestRequest.createRoom(testUserId, "Havefun")
 
-    roomMessageProbe.expectMessageType[RoomCreated]
+    roomMessageProbe.expectMessageType[LobbyMessage.UserJoined]
+
+    roomMessageProbe.expectMessageType[LobbyMessage.CreateRoomRequest]
+
+    roomMessageProbe.expectMessageType[LobbyMessage.GameRoomCreated]
 
     outgoingMessageProbe.expectMessageType[UserJoinedRoom]
 

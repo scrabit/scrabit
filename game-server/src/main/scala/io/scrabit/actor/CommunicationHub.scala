@@ -19,12 +19,16 @@ object CommunicationHub:
 
   val CommunicationHubServiceKey = ServiceKey[Message]("communication-hub-service")
 
-  case class UserSession(userId: String, sessionKey: String, connection: ActorRef[OutgoingMessage], roomId: Option[Int]) {
+  private val LOBBY_ROOM_ID = 0
 
-    def joinRoom(roomId: Int): UserSession = this.copy(roomId = Some(roomId))
+  case class UserSession(userId: String, sessionKey: String, connection: ActorRef[OutgoingMessage], roomId: Int) {
+
+    def joinRoom(id: Int): UserSession = this.copy(roomId = id)
+    def joinLobby: UserSession         = this.copy(roomId = LOBBY_ROOM_ID)
+    def isInLobby: Boolean             = roomId == LOBBY_ROOM_ID
   }
 
-  case class CreateSystemRoom(name: String) extends InternalMessage
+  case class CreateRoomGame(owner: String, name: String, Behavior: Behavior[RoomMessage]) extends InternalMessage
 
   case class UserDisconnected(userId: String, connection: ActorRef[OutgoingMessage]) extends InternalMessage
 
@@ -62,7 +66,7 @@ object CommunicationHub:
           ((sessions - userSession.sessionKey) + (sessionKey -> userId)) -> (this.connections - userSession.connection)
       }
 
-      this.copy(users = users + (userId -> UserSession(userId, sessionKey, connection, None)), sessions = updatedSessions)
+      this.copy(users = users + (userId -> UserSession(userId, sessionKey, connection, LOBBY_ROOM_ID)), sessions = updatedSessions)
     }
 
     def deleteSession(userSession: UserSession): Data =
@@ -88,16 +92,14 @@ object CommunicationHub:
 
   }
 
-  def create(authenticator: ActorRef[AuthenticationService.Login],
-             roomBehavior: Behavior[RoomMessage], 
-            ): Behavior[Message] = Behaviors.setup { context =>
-    context.system.receptionist ! Receptionist.Register(CommunicationHubServiceKey, context.self)
-    Actor(authenticator, roomBehavior, context)(Data.empty)
+  def create(authenticator: ActorRef[AuthenticationService.Login], lobby: ActorRef[LobbyMessage]): Behavior[Message] = Behaviors.setup { context =>
+    lobby ! LobbyMessage.Init(context.self)
+    Actor(authenticator, lobby, context)(Data.empty)
   }
 
   private class Actor(
     authenticationService: ActorRef[AuthenticationService.Login],
-    roomBehavior: Behavior[RoomMessage],
+    lobby: ActorRef[LobbyMessage],
     context: ActorContext[Message]
   ) {
     def apply(data: Data): Behavior[Message] = Behaviors.receiveMessagePartial {
@@ -120,6 +122,7 @@ object CommunicationHub:
         context.log.info(s"store new session for $userId with sessionKey $sessionKey")
         val updatedData = data.newSession(userId, sessionKey, connection)
         context.self ! LoginSuccess(userId, sessionKey)
+        lobby ! LobbyMessage.UserJoined(userId)
         context.watchWith(connection, UserDisconnected(userId, connection))
         apply(updatedData)
 
@@ -144,27 +147,29 @@ object CommunicationHub:
         }
         Behaviors.same
 
-      case CreateRoom(owner, roomName) =>
-        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
-        data.addRoom(spawnActor) match {
-          case None =>
-            context.log.warn("Cannot create new room: reached max room limit")
-            Behaviors.same
-          case Some((updatedData, roomId, ref)) =>
-            context.self ! JoinRoom(owner, roomId)
-            ref ! RoomCreated(roomId, owner, context.self)
-            context.log.info(s"Created room $roomName - id: $roomId")
-            apply(updatedData)
-        }
+      // case CreateRoom(owner, roomName) =>
+      //   val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
+      //   data.addRoom(spawnActor) match {
+      //     case None =>
+      //       context.log.warn("Cannot create new room: reached max room limit")
+      //       Behaviors.same
+      //     case Some((updatedData, roomId, ref)) =>
+      //       context.self ! JoinRoom(owner, roomId)
+      //       ref ! RoomCreated(roomId, owner, context.self)
+      //       context.log.info(s"Created room $roomName - id: $roomId")
+      //       apply(updatedData)
+      //   }
 
-      case CreateSystemRoom(roomName) =>
-        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
+      case CreateRoomGame(owner, roomName, behavior) =>
+        val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(behavior, s"room-${roomId}")
         data.addRoom(spawnActor) match {
           case None =>
             context.log.warn("Cannot create new room: reached max room limit")
             Behaviors.same
           case Some((updatedData, roomId, ref)) =>
             context.log.info(s"Created room $roomName - id: $roomId")
+            context.self ! JoinRoom(owner, roomId)
+            lobby ! LobbyMessage.GameRoomCreated(roomId, owner, ref)
             apply(updatedData)
         }
 
@@ -179,15 +184,19 @@ object CommunicationHub:
             apply(updatedData)
         }
 
+      case CreateRoom(userId, roomName) =>
+        if data.users.get(userId).exists(_.roomId == LOBBY_ROOM_ID)
+        then lobby ! LobbyMessage.CreateRoomRequest(userId, roomName)
+        else context.log.warn(s"User $userId sent invalid CreateRoom Request")
+        Behaviors.same
+
       case req: Request =>
         data.users.get(req.userId) match {
           case None =>
             context.log.error(s"userId ${req.userId} not exist")
           case Some(session) =>
-            session.roomId foreach { roomId =>
-              req.toAction foreach { action =>
-                data.rooms(roomId) ! action
-              }
+            req.toAction foreach { action =>
+              data.rooms(session.roomId) ! action
             }
         }
         Behaviors.same

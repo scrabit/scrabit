@@ -43,19 +43,24 @@ object WebsocketServer {
       )
     }
 
-  def apply(authenticator: ActorRef[AuthenticationService.Login], gameLogic: Behavior[RoomMessage]): Behavior[Nothing] = Behaviors.setup { context =>
-    val port                                                = 8080
-    implicit val system: ActorSystem[Nothing]               = context.system
-    implicit val executionContext: ExecutionContextExecutor = context.executionContext
-    val communicationHub                                    = context.spawn(CommunicationHub.create(authenticator, gameLogic), "communication-hub")
-    Http()
-      .newServerAt("localhost", port)
-      .bind(route(communicationHub, context.log.debug))
-      .andThen {
-        case Success(binding) => binding.addToCoordinatedShutdown(5.seconds)
-        case Failure(exception) =>
-          context.log.error(s"Failed To start Websocket Server : ${exception.getMessage()}")
-      }
-    Behaviors.empty
+  def apply(authenticator: Behavior[AuthenticationService.Login], lobbyLogic: Behavior[LobbyMessage]): Behavior[Nothing] = Behaviors.setup {
+    context =>
+      val port                                                = 8080
+      implicit val system: ActorSystem[Nothing]               = context.system
+      implicit val executionContext: ExecutionContextExecutor = context.executionContext
+      val authenticationService                               = context.spawnAnonymous(authenticator)
+      val lobby                                               = context.spawnAnonymous(lobbyLogic)
+
+      val communicationHub = context.spawn(CommunicationHub.create(authenticationService, lobby), "communication-hub")
+
+      Http()
+        .newServerAt("localhost", port)
+        .bind(route(communicationHub, context.log.debug))
+        .andThen {
+          case Success(binding) => binding.addToCoordinatedShutdown(5.seconds)
+          case Failure(exception) =>
+            context.log.error(s"Failed To start Websocket Server : ${exception.getMessage()}")
+        }
+      Behaviors.empty
   }
 }

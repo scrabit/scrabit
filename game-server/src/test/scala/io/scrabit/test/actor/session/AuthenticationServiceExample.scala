@@ -7,14 +7,14 @@ import io.scrabit.test.actor.testkit.TestAuthenticator
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.receptionist.Receptionist
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import io.scrabit.actor.message.LobbyMessage
 
 object AuthenticationServiceExample {
 
   @main def start(): Unit = {
     val dummyAuthenticator = TestAuthenticator()
     val root = Behaviors.setup { context =>
-      val auth = context.spawnAnonymous(dummyAuthenticator)
-      context.spawnAnonymous(WebsocketServer(auth, Behaviors.empty))
+      context.spawnAnonymous(WebsocketServer(dummyAuthenticator, Behaviors.empty))
       Behaviors.empty
     }
 

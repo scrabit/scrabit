@@ -5,25 +5,24 @@ import io.scrabit.actor.message.RoomMessage
 import io.scrabit.actor.session.AuthenticationService
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorSystem, Behavior}
+import io.scrabit.actor.message.LobbyMessage
 
 trait ScrabitServer {
   protected def authenticator: Behavior[AuthenticationService.Login]
-  
-  protected def gameLogic: Behavior[RoomMessage] 
-  
+
+  protected def lobbyLogic: Behavior[LobbyMessage]
+
   protected def actorSystem: String
-  
+
   private def start(): Unit = {
     val root = Behaviors.setup { context =>
-      val authenticationService = context.spawnAnonymous(authenticator)
-      context.spawnAnonymous(WebsocketServer(authenticationService, gameLogic))
+      context.spawnAnonymous(WebsocketServer(authenticator, lobbyLogic))
       Behaviors.empty
     }
     ActorSystem(root, actorSystem)
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     start()
-  }
-  
+
 }
