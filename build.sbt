@@ -29,11 +29,13 @@ lazy val gameServer = (project in file("game-server"))
     )
   )
 
-lazy val ticTacToe = (project in file("examples/tic-tac-toe"))
-  .settings(
-    name := "tic-tac-toe"
-  )
-  .dependsOn(gameServer)
+lazy val ticTacToeServer = (project in file("examples/tic-tac-toe/server"))
+  .dependsOn(gameServer, ticTacToecCommon)
+
+lazy val ticTacToeClient = (project in file("examples/tic-tac-toe/client"))
+  .dependsOn(gameServer, ticTacToecCommon)
+
+lazy val ticTacToecCommon = (project in file("examples/tic-tac-toe/common"))
 
 lazy val coinFlipUltimate = (project in file("examples/coin-flip-ultimate"))
   .settings(
