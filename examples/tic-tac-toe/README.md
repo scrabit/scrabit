@@ -1,6 +1,7 @@
 # Tic Tac Toe
 
 ## FSM
+```mermaid
 stateDiagram-v2
     [*] --> LoggedOut
     LoggedOut --> LoggedIn : Login
@@ -19,3 +20,4 @@ stateDiagram-v2
     GameWon --> GameOver : End Game
     GameDraw --> GameOver : End Game
     GameOver --> PlayersReady : Reset Game (if both ready)
+```
