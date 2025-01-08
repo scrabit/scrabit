@@ -8,22 +8,20 @@ import org.apache.pekko.actor.typed.{ActorSystem, Behavior}
 
 trait ScrabitServer {
   protected def authenticator: Behavior[AuthenticationService.Login]
-  
-  protected def gameLogic: Behavior[RoomMessage] 
-  
+
+  protected def gameLogic: Behavior[RoomMessage]
+
   protected def actorSystem: String
-  
+
   private def start(): Unit = {
     val root = Behaviors.setup { context =>
-      val authenticationService = context.spawnAnonymous(authenticator)
-      context.spawnAnonymous(WebsocketServer(authenticationService, gameLogic))
+      context.spawnAnonymous(WebsocketServer(authenticator, gameLogic))
       Behaviors.empty
     }
     ActorSystem(root, actorSystem)
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     start()
-  }
-  
+
 }

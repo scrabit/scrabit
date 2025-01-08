@@ -43,11 +43,14 @@ object WebsocketServer {
       )
     }
 
-  def apply(authenticator: ActorRef[AuthenticationService.Login], gameLogic: Behavior[RoomMessage]): Behavior[Nothing] = Behaviors.setup { context =>
+  def apply(authenticator: Behavior[AuthenticationService.Login], gameLogic: Behavior[RoomMessage]): Behavior[Nothing] = Behaviors.setup { context =>
     val port                                                = 8080
     implicit val system: ActorSystem[Nothing]               = context.system
     implicit val executionContext: ExecutionContextExecutor = context.executionContext
-    val communicationHub                                    = context.spawn(CommunicationHub.create(authenticator, gameLogic), "communication-hub")
+    val authenticationService                               = context.spawnAnonymous(authenticator)
+
+    val communicationHub = context.spawn(CommunicationHub.create(authenticationService, gameLogic), "communication-hub")
+
     Http()
       .newServerAt("localhost", port)
       .bind(route(communicationHub, context.log.debug))
