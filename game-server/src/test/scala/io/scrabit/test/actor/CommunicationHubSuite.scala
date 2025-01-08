@@ -13,41 +13,58 @@ import org.apache.pekko.actor.typed.javadsl.Behaviors
 import org.scalatest.funsuite.AnyFunSuiteLike
 import io.github.iltotore.iron.constraint.numeric.*
 import io.github.iltotore.iron.*
+import io.scrabit.actor.message.LobbyMessage
 
 class CommunicationHubSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
 
-  private val authenticator       = TestAuthenticator()
-  private val authenticatorRef    = testKit.spawn(authenticator)
-  private val communicationHubRef = testKit.spawn(CommunicationHub.create(authenticatorRef, Behaviors.empty))
+  private val authenticator    = TestAuthenticator()
+  private val authenticatorRef = testKit.spawn(authenticator)
 
-  private def assertLogin(commHub: ActorRef[RawMessage], username: String, password: String)(
-    expectation: TestProbe[OutgoingMessage] => Unit
+  private def assertLogin(username: String, password: String)(
+    expectation: (TestProbe[OutgoingMessage], TestProbe[LobbyMessage]) => Unit
   ): Unit = {
-    val probe      = testKit.createTestProbe[OutgoingMessage]()
-    val connection = probe.ref
+    val outgoingMessaggeProbe = testKit.createTestProbe[OutgoingMessage]()
+    val lobbyMessageProbe     = testKit.createTestProbe[LobbyMessage]()
+    val connection            = outgoingMessaggeProbe.ref
+    val lobby = testKit.spawn(
+      Behaviors.receiveMessage[LobbyMessage] {
+        case LobbyMessage.Init(commHub) => // avoid fowarding Init message to probe
+          Behaviors.same
+        case msg @ _ =>
+          lobbyMessageProbe.ref ! msg
+          Behaviors.same
+      }
+    )
+    val commHub = testKit.spawn(CommunicationHub.create(authenticatorRef, lobby))
     commHub ! TestRequest.login(username, password, connection)
-    expectation(probe)
+    expectation(outgoingMessaggeProbe, lobbyMessageProbe)
   }
 
   test("Login flow: success") {
-    assertLogin(communicationHubRef, "rabbit1", "youneverknow") { probe =>
-      probe.expectMessage(LoginSuccess("rabbit1", "secret-token-used-for-secure-communication"))
+    assertLogin("rabbit1", "youneverknow") { case (outgoingMessaggeProbe, lobbyMessageProbe) =>
+      outgoingMessaggeProbe.expectMessage(LoginSuccess("rabbit1", "secret-token-used-for-secure-communication"))
+      lobbyMessageProbe.expectMessage(LobbyMessage.UserJoined("rabbit1"))
     }
 
-    assertLogin(communicationHubRef, "littlepig", "ilovescala") { probe =>
+    assertLogin("littlepig", "ilovescala") { (probe, lobbyMessageProbe) =>
       probe.expectMessage(LoginSuccess("littlepig", "secret-token-used-for-secure-communication"))
+      lobbyMessageProbe.expectMessage(LobbyMessage.UserJoined("littlepig"))
     }
   }
 
   test("Login flow: failure") {
-    assertLogin(communicationHubRef, "wolf", "openthedoornow") { probe =>
+    assertLogin("wolf", "openthedoornow") { (probe, lobbyMessageProbe) =>
       probe.expectNoMessage()
+      lobbyMessageProbe.expectNoMessage()
     }
   }
 
   test("Send message with invalid session key") { // FIXME: this test case is not good enough because there won't be any response even if the session key is valid
-    val probe      = testKit.createTestProbe[OutgoingMessage]()
+    val probe             = testKit.createTestProbe[OutgoingMessage]()
+    val lobbyMessageProbe = testKit.createTestProbe[LobbyMessage]()
+
+    val commHub    = testKit.spawn(CommunicationHub.create(authenticatorRef, lobbyMessageProbe.ref))
     val connection = probe.ref
-    communicationHubRef ! TestRequest.sessionMessage("rabbit1", 10, "invalid-session-key", connection)
+    commHub ! TestRequest.sessionMessage("rabbit1", 10, "invalid-session-key", connection)
     probe.expectNoMessage()
   }

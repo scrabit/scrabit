@@ -30,4 +30,10 @@ package object message {
 
   // TODO: admin request: kill room / kick user, ...
 
+  enum LobbyMessage:
+    case Init(commHub: ActorRef[CommunicationHub.Message])
+    case UserJoined(userId: String)
+    case GameRoomCreated(id: Int, owner: String, ref: ActorRef[RoomMessage])
+    case CreateRoomRequest(userId: String, roomName: String)
+
 }
