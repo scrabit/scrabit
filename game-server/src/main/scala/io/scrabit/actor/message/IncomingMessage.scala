@@ -21,6 +21,7 @@ object IncomingMessage:
   }
 
   object Request {
+    // these messages are handled by CommunicationHub
     private val JOIN_ROOM    = 3
     val CREATE_ROOM          = 4
     private val READY        = 5
