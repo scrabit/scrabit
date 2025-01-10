@@ -30,7 +30,7 @@ package object message {
     object Action {
       // yield this control of these messagge to Game Room
       private val JOIN_ROOM = 3
-      private val READY     = 4
+      private val READY     = 5
 
       object JoinRoom {
         def unapply(action: Action): Option[String] =
@@ -51,8 +51,9 @@ package object message {
 
   enum LobbyMessage:
     case Init(commHub: ActorRef[CommunicationHub.Message])
-    case UserJoined(userId: String)
-    case GameRoomCreated(id: Int, owner: String, ref: ActorRef[RoomMessage])
+    case LoggedIn(userId: String)
     case CreateRoomRequest(userId: String, roomName: String)
+    case GameRoomCreated(id: Int, owner: String, ref: ActorRef[RoomMessage])
+    case JoinRoomRequest(userId: String, roomId: Int)
 
 }

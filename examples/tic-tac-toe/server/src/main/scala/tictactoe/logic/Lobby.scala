@@ -38,7 +38,12 @@ object Lobby:
       commHub ! CommunicationHub.CreateRoomGame(userId, roomName, GameLogic.adapter(commHub, userId))
       Behaviors.same
 
-    case LobbyMessage.UserJoined(userId) =>
+    case LobbyMessage.JoinRoomRequest(userId, roomId) =>
+      // This seems to be redundant, but it's give lobby control to decide if user is allowed to join room
+      commHub ! CommunicationHub.JoinRoomAccepted(userId, roomId)
+      Behaviors.same
+
+    case LobbyMessage.LoggedIn(userId) =>
       println(s"User $userId joined. sending ative room List")
       commHub ! LobbyInfo(userId, state.rooms)
       Behaviors.same

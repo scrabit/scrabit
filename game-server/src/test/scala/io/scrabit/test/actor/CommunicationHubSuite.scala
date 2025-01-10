@@ -43,12 +43,12 @@ class CommunicationHubSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
   test("Login flow: success") {
     assertLogin("rabbit1", "youneverknow") { case (outgoingMessaggeProbe, lobbyMessageProbe) =>
       outgoingMessaggeProbe.expectMessage(LoginSuccess("rabbit1", "secret-token-used-for-secure-communication"))
-      lobbyMessageProbe.expectMessage(LobbyMessage.UserJoined("rabbit1"))
+      lobbyMessageProbe.expectMessage(LobbyMessage.LoggedIn("rabbit1"))
     }
 
     assertLogin("littlepig", "ilovescala") { (probe, lobbyMessageProbe) =>
       probe.expectMessage(LoginSuccess("littlepig", "secret-token-used-for-secure-communication"))
-      lobbyMessageProbe.expectMessage(LobbyMessage.UserJoined("littlepig"))
+      lobbyMessageProbe.expectMessage(LobbyMessage.LoggedIn("littlepig"))
     }
   }
 

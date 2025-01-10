@@ -113,7 +113,7 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
 
     commHub ! TestRequest.createRoom(testUserId, "Havefun")
 
-    roomMessageProbe.expectMessageType[LobbyMessage.UserJoined]
+    roomMessageProbe.expectMessageType[LobbyMessage.LoggedIn]
 
     roomMessageProbe.expectMessageType[LobbyMessage.CreateRoomRequest]
 

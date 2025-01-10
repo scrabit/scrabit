@@ -28,9 +28,9 @@ object IncomingMessage:
     val CREATE_ROOM       = 4
 
     object JoinRoom {
-      def unapply(req: Request): Option[(String, String)] =
+      def unapply(req: Request): Option[(String, Int)] =
         if (req.tpe == JOIN_ROOM) {
-          req.payload.flatMap(json => json("roomId").flatMap(_.asString).map(roomId => (req.userId, roomId)))
+          req.payload.flatMap(json => json("roomId").flatMap(_.asNumber.flatMap(_.toInt)).map(roomId => (req.userId, roomId)))
         } else None
     }
 

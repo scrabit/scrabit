@@ -13,12 +13,16 @@ import io.scrabit.actor.CommunicationHub
 import io.circe.Json
 import io.circe.syntax.*
 import tictactoe.logic.GameLogic.*
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 
-final private class GameLogic(hub: ActorRef[OutgoingMessage]) {
+final private class GameLogic(hub: ActorRef[OutgoingMessage], context: ActorContext[Msg]) {
+
+  private val logger = context.log
 
   def waiting(state: Waiting): Behavior[Msg] = Behaviors.receiveMessagePartial {
-    case Ready(username) =>
-      val updatedState = state.readyToggle(username)
+    case Ready(userId) =>
+      logger.info(s"user $userId readyToggle")
+      val updatedState = state.readyToggle(userId)
       if updatedState.canStart then {
         val firstTurn    = updatedState.player1
         val playingState = Playing(updatedState.player1, updatedState.player2.get, Board.empty, firstTurn)
@@ -28,6 +32,7 @@ final private class GameLogic(hub: ActorRef[OutgoingMessage]) {
       } else waiting(updatedState)
 
     case Join(player) =>
+      logger.info(s"user ${player.userId} joined)")
       waiting(state.copy(player2 = Some(player)))
   }
 
@@ -68,11 +73,11 @@ object GameLogic:
   case class Waiting(player1: Player, player2: Option[Player] = None) extends GameState {
     def canStart: Boolean             = player1.isReady && player2.exists(_.isReady)
     def join(player: Player): Waiting = this.copy(player2 = Some(player))
-    def readyToggle(username: String): Waiting =
+    def readyToggle(userId: String): Waiting =
       player2 match
-        case Some(p2) if p2.userId == username => copy(player2 = player2.map(_.readyToggle))
-        case _ if player1.userId == username   => copy(player1 = player1.readyToggle)
-        case _                                 => this
+        case Some(p2) if p2.userId == userId => copy(player2 = player2.map(_.readyToggle))
+        case _ if player1.userId == userId   => copy(player1 = player1.readyToggle)
+        case _                               => this
   }
 
   enum Mark:
@@ -132,8 +137,6 @@ object GameLogic:
       copy(currentTurn = turn)
   }
 
-  case object Finished extends GameState
-
   case class Player(userId: String, isReady: Boolean = false) {
     def readyToggle: Player = copy(isReady = !isReady)
 
@@ -145,7 +148,7 @@ object GameLogic:
 
   enum Msg:
     case Join(player: Player)
-    case Ready(username: String)
+    case Ready(userId: String)
     case Move(player: Player, x: Int, y: Int)
 
   case class BoardSync(userId: String, currentTurn: Player, board: Board) extends OutgoingMessage {
@@ -177,7 +180,7 @@ object GameLogic:
   private def apply(hub: ActorRef[OutgoingMessage], username: String): Behavior[Msg] = Behaviors.setup { context =>
     val player1     = Player(username)
     val intialState = Waiting(player1, None)
-    new GameLogic(hub).waiting(intialState)
+    new GameLogic(hub, context).waiting(intialState)
   }
 
   def adapter(hub: ActorRef[OutgoingMessage], username: String): Behavior[RoomMessage] = Behaviors.setup(context =>
