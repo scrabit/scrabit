@@ -22,10 +22,8 @@ object IncomingMessage:
   }
 
   object Request {
-    // these messages are handled by CommunicationHub
-    // Don't allow CommunicationHub to handle this messages
-    private val JOIN_ROOM = 3
-    val CREATE_ROOM       = 4
+    private val JOIN_ROOM   = 2
+    private val CREATE_ROOM = 3
 
     object JoinRoom {
       def unapply(req: Request): Option[(String, Int)] =
