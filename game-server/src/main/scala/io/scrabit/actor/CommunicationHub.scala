@@ -173,16 +173,16 @@ object CommunicationHub:
             apply(updatedData)
         }
 
-      case JoinRoom(userId, roomId) =>
-        // TODO: sync room state (new user) with Room Actor (?)
-        data.userJoinRoom(userId, roomId) match {
-          case Left(msg) =>
-            context.log.warn(s"Failed to join. $msg")
-            Behaviors.same
-          case Right(updatedData) =>
-            context.self ! UserJoinedRoom(userId, roomId)
-            apply(updatedData)
-        }
+      // case JoinRoom(userId, roomId) =>
+      //   // TODO: sync room state (new user) with Room Actor (?)
+      //   data.userJoinRoom(userId, roomId) match {
+      //     case Left(msg) =>
+      //       context.log.warn(s"Failed to join. $msg")
+      //       Behaviors.same
+      //     case Right(updatedData) =>
+      //       context.self ! UserJoinedRoom(userId, roomId)
+      //       apply(updatedData)
+      //   }
 
       case CreateRoom(userId, roomName) =>
         if data.users.get(userId).exists(_.roomId == LOBBY_ROOM_ID)
@@ -195,9 +195,7 @@ object CommunicationHub:
           case None =>
             context.log.error(s"userId ${req.userId} not exist")
           case Some(session) =>
-            req.toAction foreach { action =>
-              data.rooms(session.roomId) ! action
-            }
+            data.rooms(session.roomId) ! req.toAction
         }
         Behaviors.same
 

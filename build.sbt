@@ -29,8 +29,12 @@ lazy val gameServer = (project in file("game-server"))
     )
   )
 
-lazy val ticTacToeServer = (project in file("examples/tic-tac-toe/server"))
-  .dependsOn(gameServer, ticTacToecCommon)
+lazy val ticTacToeServer =
+  (project in file("examples/tic-tac-toe/server"))
+    .settings(
+      libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % ScalaTestVersion % Test)
+    )
+    .dependsOn(gameServer, ticTacToecCommon)
 
 lazy val ticTacToeClient = (project in file("examples/tic-tac-toe/client"))
   .dependsOn(gameServer, ticTacToecCommon)

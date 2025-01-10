@@ -11,21 +11,21 @@ sealed trait IncomingMessage
 
 object IncomingMessage:
   case class RawMessage(text: String, connection: ActorRef[OutgoingMessage]) extends IncomingMessage // RawMessage -> Request / Login / discarded
+
   case class Request(
     userId: String, // userId is reliable because session is already verified
     tpe: Int,
     payload: Option[JsonObject]
   ) extends IncomingMessage {
 
-    def toAction: Option[Action] = tpe.refineOption[Greater[9]].map(Action(userId, _, payload))
+    def toAction: Action = Action(userId, tpe, payload)
   }
 
   object Request {
     // these messages are handled by CommunicationHub
-    private val JOIN_ROOM    = 3
-    val CREATE_ROOM          = 4
-    private val READY        = 5
-    private val PLAYER_REPLY = 8
+    // Don't allow CommunicationHub to handle this messages
+    private val JOIN_ROOM = 3
+    val CREATE_ROOM       = 4
 
     object JoinRoom {
       def unapply(req: Request): Option[(String, String)] =
