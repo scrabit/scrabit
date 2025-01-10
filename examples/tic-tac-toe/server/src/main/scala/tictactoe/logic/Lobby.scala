@@ -10,6 +10,7 @@ import io.scrabit.actor.message.RoomMessage
 import io.scrabit.actor.message.OutgoingMessage
 import io.circe.Json
 import io.circe.syntax.*
+import tictactoe.message.out.*
 
 /*FIXME: Duplicate code in all lobbies */
 object Lobby:
@@ -17,15 +18,6 @@ object Lobby:
   case class GameRoom(id: Int, owner: String, ref: ActorRef[RoomMessage]) // TOOD: room might have isPlaying state
 
   case class LobbyState(rooms: List[GameRoom])
-
-  case class LobbyInfo(userId: String, rooms: List[GameRoom]) extends OutgoingMessage {
-    override val tpe: Int = 12
-
-    override def data: Json = Json.obj(
-      "rooms" ->
-        Json.arr(rooms.map(room => Json.obj("id" -> room.id.asJson, "owner" -> room.owner.asJson))*)
-    )
-  }
 
   val initializing: Behavior[LobbyMessage] = Behaviors.receiveMessagePartial { case LobbyMessage.Init(commHub) =>
     println("Lobby initialized")

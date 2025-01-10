@@ -163,10 +163,10 @@ object CommunicationHub:
       case JoinRoomAccepted(userId, roomId) =>
         data.userJoinRoom(userId, roomId) match {
           case Left(msg) =>
-            context.log.warn(s"Failed to join. $msg")
+            context.log.info(s"Failed to join. $msg")
             Behaviors.same
           case Right(updatedData) =>
-            context.log.warn(s"User $userId joined room $roomId")
+            context.log.info(s"User $userId joined room $roomId")
             context.self ! UserJoinedRoom(userId, roomId)
             apply(updatedData)
         }
@@ -192,7 +192,7 @@ object CommunicationHub:
         Behaviors.same
 
       case out: OutgoingMessage =>
-        val recipient = out.userId
+        val recipient = out.recipient
         context.log.debug(s"out <-- $recipient: ${out.toWsMessage}")
         data.users.get(recipient) match
           case None =>

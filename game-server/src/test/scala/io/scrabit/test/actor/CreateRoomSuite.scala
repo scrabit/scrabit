@@ -52,9 +52,9 @@ class CreateRoomSuite extends ScalaTestWithActorTestKit, AnyFunSuiteLike:
 
   }
 
-  case class NiceToMeetYa(userId: String) extends OutgoingMessage {
+  case class NiceToMeetYa(recipient: String) extends OutgoingMessage {
 
-    override def data: Json = s"Hi user $userId. Nice to meet ya!".asJson
+    override def data: Json = s"Hi user $recipient. Nice to meet ya!".asJson
 
     override def tpe: Int = 10
   }

@@ -14,6 +14,8 @@ import io.circe.Json
 import io.circe.syntax.*
 import tictactoe.logic.GameLogic.*
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
+import tictactoe.message.out.BoardSync
+import tictactoe.message.out.GameResult
 
 final private class GameLogic(hub: ActorRef[OutgoingMessage], context: ActorContext[Msg]) {
 
@@ -150,32 +152,6 @@ object GameLogic:
     case Join(player: Player)
     case Ready(userId: String)
     case Move(player: Player, x: Int, y: Int)
-
-  case class BoardSync(userId: String, currentTurn: Player, board: Board) extends OutgoingMessage {
-    override val tpe: Int = 13
-
-    override def data: Json =
-      val rows: Vector[Json] = board.cells.map { row =>
-        Json.arr(row.map {
-          case Cell(Some(Mark.X)) => "X".asJson
-          case Cell(Some(Mark.O)) => "O".asJson
-          case Cell(None)         => Json.Null
-        }*)
-      }
-
-      Json.obj(
-        "currentTurn" -> currentTurn.userId.asJson,
-        "cells"       -> Json.arr(rows*)
-      )
-  }
-
-  case class GameResult(userId: String, winner: Option[Player]) extends OutgoingMessage {
-
-    override def tpe: Int = 14
-
-    override def data: Json = Json.obj("winner" -> winner.map(_.userId).asJson)
-
-  }
 
   private def apply(hub: ActorRef[OutgoingMessage], username: String): Behavior[Msg] = Behaviors.setup { context =>
     val player1     = Player(username)
