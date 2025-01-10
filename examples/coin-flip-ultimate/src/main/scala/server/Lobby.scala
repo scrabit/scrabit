@@ -19,6 +19,6 @@ object Lobby:
       commHub ! CommunicationHub.CreateRoomGame(userId, roomName, GameLogic(commHub))
       Behaviors.same
 
-    case LobbyMessage.GameRoomCreated(id, ref) =>
+    case LobbyMessage.GameRoomCreated(id, owner, ref) =>
       Behaviors.same
   }
