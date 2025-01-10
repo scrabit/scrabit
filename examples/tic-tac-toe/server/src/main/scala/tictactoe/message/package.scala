@@ -4,16 +4,18 @@ import tictactoe.logic.Lobby.GameRoom
 import io.scrabit.actor.message.OutgoingMessage
 import io.circe.Json
 import io.circe.syntax.*
-import tictactoe.logic.GameLogic.Player
-import tictactoe.logic.GameLogic.Board
-import tictactoe.logic.GameLogic.Mark
-import tictactoe.logic.GameLogic.Cell
+import tictactoe.logic.GameLogic.*
 
 package object message {
 
   object out {
+    private val LOBBY_INFO  = 10
+    private val READY_SYNC  = 11
+    private val BOARD_SYNC  = 12
+    private val GAME_RESULT = 13
+
     case class LobbyInfo(recipient: String, rooms: List[GameRoom]) extends OutgoingMessage {
-      override val tpe: Int = 12
+      override val tpe: Int = LOBBY_INFO
 
       override def data: Json = Json.obj(
         "rooms" ->
@@ -21,15 +23,24 @@ package object message {
       )
     }
 
-    case class UserReady(recipient: String, joiner: String) extends OutgoingMessage {
+    case class ReadySync(recipient: String, players: List[Player]) extends OutgoingMessage {
 
-      override def tpe: Int = ???
+      override def tpe: Int = READY_SYNC
 
-      override def data: Json = ???
+      override def data: Json = Json.obj(
+        "ready" -> Json.arr(
+          players.map(player =>
+            Json.obj(
+              "userId" -> player.userId.asJson,
+              "ready"  -> player.isReady.asJson
+            )
+          )*
+        )
+      )
     }
 
     case class BoardSync(recipient: String, currentTurn: Player, board: Board) extends OutgoingMessage {
-      override val tpe: Int = 13
+      override val tpe: Int = BOARD_SYNC
 
       override def data: Json =
         val rows: Vector[Json] = board.cells.map { row =>
@@ -48,7 +59,7 @@ package object message {
 
     case class GameResult(recipient: String, winner: Option[Player]) extends OutgoingMessage {
 
-      override def tpe: Int = 14
+      override def tpe: Int = GAME_RESULT
 
       override def data: Json = Json.obj("winner" -> winner.map(_.userId).asJson)
 

@@ -16,15 +16,22 @@ import tictactoe.logic.GameLogic.*
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import tictactoe.message.out.BoardSync
 import tictactoe.message.out.GameResult
+import tictactoe.message.out.ReadySync
 
 final private class GameLogic(hub: ActorRef[OutgoingMessage], context: ActorContext[Msg]) {
 
   private val logger = context.log
 
   def waiting(state: Waiting): Behavior[Msg] = Behaviors.receiveMessagePartial {
-    case Ready(userId) =>
+    case ReadyToggle(userId) =>
       logger.info(s"user $userId readyToggle")
+
       val updatedState = state.readyToggle(userId)
+
+      updatedState.players foreach { player =>
+        hub ! ReadySync(player.userId, updatedState.players)
+      }
+
       if updatedState.canStart then {
         val firstTurn    = updatedState.player1
         val playingState = Playing(updatedState.player1, updatedState.player2.get, Board.empty, firstTurn)
@@ -74,6 +81,7 @@ object GameLogic:
 
   case class Waiting(player1: Player, player2: Option[Player] = None) extends GameState {
     def canStart: Boolean             = player1.isReady && player2.exists(_.isReady)
+    def players: List[Player]         = List(player1) ++ player2.toList
     def join(player: Player): Waiting = this.copy(player2 = Some(player))
     def readyToggle(userId: String): Waiting =
       player2 match
@@ -150,7 +158,7 @@ object GameLogic:
 
   enum Msg:
     case Join(player: Player)
-    case Ready(userId: String)
+    case ReadyToggle(userId: String)
     case Move(player: Player, x: Int, y: Int)
 
   private def apply(hub: ActorRef[OutgoingMessage], username: String): Behavior[Msg] = Behaviors.setup { context =>
@@ -165,7 +173,7 @@ object GameLogic:
       case Action.JoinRoom(userId) =>
         Msg.Join(Player(userId))
       case Action.Ready(userId) =>
-        Msg.Ready(userId)
+        Msg.ReadyToggle(userId)
     }
     Behaviors.receiveMessage[RoomMessage] { msg =>
       gameLogic ! convert(msg)
