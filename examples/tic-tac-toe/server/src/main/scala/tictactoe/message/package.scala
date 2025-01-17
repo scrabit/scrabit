@@ -19,7 +19,7 @@ package object message {
 
       override def data: Json = Json.obj(
         "rooms" ->
-          Json.arr(rooms.map(room => Json.obj("id" -> room.id.asJson, "owner" -> room.owner.asJson))*)
+          Json.arr(rooms.map(room => Json.obj("id" -> room.id.asJson, "name" -> "MIU library".asJson, "owner" -> room.owner.asJson))*)
       )
     }
 

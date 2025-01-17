@@ -167,12 +167,20 @@ object GameLogic:
     new GameLogic(hub, context).waiting(intialState)
   }
 
+  object Ready {
+    val READY = 11
+    def unapply(action: Action): Option[String] =
+      if (action.tpe == READY) {
+        Some(action.userId)
+      } else None
+  }
+
   def adapter(hub: ActorRef[OutgoingMessage], username: String): Behavior[RoomMessage] = Behaviors.setup(context =>
     val gameLogic = context.spawnAnonymous(GameLogic(hub, username))
     val convert: RoomMessage => Msg = {
       case Action.JoinRoom(userId) =>
         Msg.Join(Player(userId))
-      case Action.Ready(userId) =>
+      case Ready(userId) =>
         Msg.ReadyToggle(userId)
     }
     Behaviors.receiveMessage[RoomMessage] { msg =>

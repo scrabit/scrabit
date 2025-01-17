@@ -1,4 +1,4 @@
-package io.scrabit.test.actor
+package io.scrabit.actor
 
 import io.circe.Json
 import io.circe.syntax.*
@@ -15,8 +15,8 @@ import io.scrabit.actor.message.RoomMessage.ActionType
 import io.scrabit.actor.message.RoomMessage.RoomCreated
 import io.scrabit.actor.message.RoomMessage.UserJoined
 import io.scrabit.actor.session.AuthenticationService.Login
-import io.scrabit.test.actor.message.TestRequest
-import io.scrabit.test.actor.testkit.TestAuthenticator
+import io.scrabit.actor.message.TestRequest
+import io.scrabit.actor.testkit.TestAuthenticator
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior

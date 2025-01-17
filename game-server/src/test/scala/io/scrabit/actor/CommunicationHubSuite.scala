@@ -1,11 +1,11 @@
-package io.scrabit.test.actor
+package io.scrabit.actor
 
 import io.scrabit.actor.CommunicationHub
 import io.scrabit.actor.message.IncomingMessage.RawMessage
 import io.scrabit.actor.message.OutgoingMessage
 import io.scrabit.actor.message.OutgoingMessage.LoginSuccess
-import io.scrabit.test.actor.message.TestRequest
-import io.scrabit.test.actor.testkit.TestAuthenticator
+import io.scrabit.actor.message.TestRequest
+import io.scrabit.actor.testkit.TestAuthenticator
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.apache.pekko.actor.testkit.typed.scaladsl.TestProbe
 import org.apache.pekko.actor.typed.ActorRef

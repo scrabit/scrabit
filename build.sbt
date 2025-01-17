@@ -37,7 +37,21 @@ lazy val ticTacToeServer =
     .dependsOn(gameServer, ticTacToecCommon)
 
 lazy val ticTacToeClient = (project in file("examples/tic-tac-toe/client"))
-  .dependsOn(gameServer, ticTacToecCommon)
+  .dependsOn(ticTacToecCommon)
+
+lazy val ticTacToeClient2 =
+  (project in file("examples/tic-tac-toe/client2"))
+    .enablePlugins(ScalaJSPlugin)
+    .settings(
+      libraryDependencies ++= Seq(
+        "io.indigoengine" %%% "tyrian-io"     % "0.11.0",
+        "io.circe"        %%% "circe-core"    % CirceVersion,
+        "io.circe"        %%% "circe-generic" % CirceVersion,
+        "io.circe"        %%% "circe-parser"  % CirceVersion
+      ),
+      scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
+      autoAPIMappings := true
+    )
 
 lazy val ticTacToecCommon = (project in file("examples/tic-tac-toe/common"))
 

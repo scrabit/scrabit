@@ -30,7 +30,6 @@ package object message {
     object Action {
       // yield this control of these messagge to Game Room
       private val JOIN_ROOM = 3
-      private val READY     = 5
 
       object JoinRoom {
         def unapply(action: Action): Option[String] =
@@ -39,12 +38,6 @@ package object message {
           } else None
       }
 
-      object Ready {
-        def unapply(action: Action): Option[String] =
-          if (action.tpe == READY) {
-            Some(action.userId)
-          } else None
-      }
     }
 
   }

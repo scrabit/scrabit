@@ -104,11 +104,10 @@ object CommunicationHub:
   ) {
     def apply(data: Data): Behavior[Message] = Behaviors.receiveMessagePartial {
       case IncomingMessage.Login(userId, password, connection) =>
-        if (data.users.contains(userId)) {
-          context.log.warn(s"User $userId already Logged in")
-        } else {
-          authenticationService ! AuthenticationService.Login(userId, password, connection, context.self)
-        }
+        // if (data.users.contains(userId)) {
+        //   context.log.warn(s"User $userId already Logged in")
+        // } else {
+        authenticationService ! AuthenticationService.Login(userId, password, connection, context.self)
         Behaviors.same
 
       case SessionCreated(userId, sessionKey, connection) =>
