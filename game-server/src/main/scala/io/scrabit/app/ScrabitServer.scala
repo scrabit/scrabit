@@ -6,6 +6,7 @@ import io.scrabit.actor.session.AuthenticationService
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorSystem, Behavior}
 import io.scrabit.actor.message.LobbyMessage
+import com.w47s0n.consolebox.Consolebox
 
 trait ScrabitServer {
   protected def authenticator: Behavior[AuthenticationService.Login]
@@ -20,9 +21,12 @@ trait ScrabitServer {
       Behaviors.empty
     }
     ActorSystem(root, actorSystem)
+    Consolebox.success("press ENTER to stop server")
+    scala.io.StdIn.readLine()
   }
 
-  def main(args: Array[String]): Unit =
+  def main(args: Array[String]): Unit = {
     start()
+  }
 
 }

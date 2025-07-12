@@ -9,6 +9,7 @@ import org.apache.pekko.http.scaladsl.model.ws.Message as WSMessage
 
 import scala.annotation.tailrec
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
+import com.w47s0n.consolebox.Consolebox
 
 object ClientLogicActor {
   case class Account(username: String, password: String)
@@ -38,12 +39,12 @@ object ClientLogicActor {
 
     @tailrec
     private def getUserChoice: String = {
-      println("Please bet: head or tail ?")
+      Consolebox.info("Please bet: head (h) or tail (t) ?")
       val choice = scala.io.StdIn.readLine().trim.toLowerCase
       choice match
         case "h" | "t" | "head" | "tail" => choice
         case _ =>
-          println("Invalid choice. Please enter either 'head' (h) or 'tail' (t).")
+          Consolebox.warning("Invalid choice. Please enter either 'head' (h) or 'tail' (t).")
           getUserChoice
     }
 

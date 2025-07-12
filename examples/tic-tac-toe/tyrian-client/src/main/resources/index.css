@@ -1,11 +1,12 @@
 @import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
-html {
-  font-family: "Inter";
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Press Start 2P";
   font-weight: 400;
 }
-.container {
 
-}
 .center {
   display: flex;
   justify-content: center;

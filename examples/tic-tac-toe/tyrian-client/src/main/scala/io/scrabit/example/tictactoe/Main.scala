@@ -106,7 +106,7 @@ object Main extends TyrianIOApp[Msg, State]:
       (model, Cmd.None)
 
   def view(state: State): Html[Msg] =
-    Menu(state)
+    div(cls :="center")(Menu(state))
 
   def subscriptions(state: State): Sub[IO, Msg] =
     state.echoSocket.subscribe {

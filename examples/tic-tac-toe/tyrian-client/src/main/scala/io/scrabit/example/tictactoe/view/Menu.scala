@@ -10,7 +10,7 @@ object Menu {
 
   def loginForm(state: LoginState): Html[Msg] = 
     div(
-      h1(s"Username: ${state.username}"),
+      h1(s"Username: Scala"),
       h1(s"Password: ${state.password.map(_ => '*')}"),
       div(input(onChange(v => Msg.UpdateLoginState(state.copy(username = v))))),
       p(button(cls := "center", onClick(Msg.Login))("Login"))
@@ -25,8 +25,7 @@ object Menu {
       div(
         div(
           state.echoSocket.connectDisconnectButton,
-          p("Log:"),
-          p(button(cls := "button text-green-800")("Create room")),
+          if state.echoSocket.socket.isDefined then loginForm(state.loginState) else div(),
           p(state.log.flatMap(msg => List(text(msg), br)))
         )
       )

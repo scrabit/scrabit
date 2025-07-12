@@ -21,4 +21,8 @@ object Lobby:
 
     case LobbyMessage.GameRoomCreated(id, owner, ref) =>
       Behaviors.same
+
+    case LobbyMessage.LoggedIn(userId) => 
+      print(s"lobby: user $userId logged ")
+      Behaviors.same
   }
