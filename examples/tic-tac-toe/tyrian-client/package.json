@@ -1,13 +1,13 @@
 {
-  "name": "tyrian-flowbite",
+  "name": "tictactoe",
   "version": "0.1.0",
-  "description": "Tyrian + Flowbite ^^",
+  "description": "Tictactoe client in Tyrian",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
-  "author": "Watson",
+  "author": "Watson Dinh",
   "license": "ISC",
   "devDependencies": {
     "@vitejs/plugin-basic-ssl": "^2.0.0",
