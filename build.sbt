@@ -36,10 +36,11 @@ lazy val ticTacToeServer =
     )
     .dependsOn(gameServer, ticTacToecCommon)
 
-lazy val ticTacToeClient = (project in file("examples/tic-tac-toe/client"))
+//TODO: add Indigo client
+lazy val ticTacToeIndigoClient = (project in file("examples/tic-tac-toe/indigo-client"))
   .dependsOn(ticTacToecCommon)
 
-lazy val ticTacToeClient2 =
+lazy val ticTacToeTyrianClient =
   (project in file("examples/tic-tac-toe/tyrian-client"))
     .enablePlugins(ScalaJSPlugin)
     .settings(
