@@ -40,7 +40,7 @@ lazy val ticTacToeClient = (project in file("examples/tic-tac-toe/client"))
   .dependsOn(ticTacToecCommon)
 
 lazy val ticTacToeClient2 =
-  (project in file("examples/tic-tac-toe/client2"))
+  (project in file("examples/tic-tac-toe/tyrian-client"))
     .enablePlugins(ScalaJSPlugin)
     .settings(
       libraryDependencies ++= Seq(
