@@ -23,7 +23,7 @@ object IncomingMessage:
 
   object Request {
     private[message] val JOIN_ROOM   = 2
-    private[message] val CREATE_ROOM = 3
+     val CREATE_ROOM = 3
 
     object JoinRoom {
       def unapply(req: Request): Option[(String, Int)] =
