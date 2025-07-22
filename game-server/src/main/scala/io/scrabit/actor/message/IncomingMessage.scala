@@ -52,7 +52,7 @@ object IncomingMessage:
 
   object Login {
     private val PREFIX      = "LOGIN-" // LOGIN-<userId>/<password>
-    private val userIdRegex = s"$PREFIX(.+)/(.+)".r
+    private val userIdRegex = s"$PREFIX(.+)/(.*)".r 
 
     private def parseCredentials(text: String): Option[(String, String)] =
       userIdRegex.findFirstMatchIn(text).map(matched => (matched.group(1), matched.group(2)))
