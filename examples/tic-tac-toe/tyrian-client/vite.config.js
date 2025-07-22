@@ -14,6 +14,7 @@ export default defineConfig(({ command }) => {
     },
     server: {
       port: 9876,
+      host: "0.0.0.0",
       historyApiFallback: true
     },
   };
