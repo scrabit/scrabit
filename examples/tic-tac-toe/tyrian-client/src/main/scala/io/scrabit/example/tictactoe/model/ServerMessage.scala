@@ -55,9 +55,14 @@ object ServerMessage:
   }
 
   object JoinedRoom {
-    def unapply(msg: ServerMessage): Option[Int] =
+    def unapply(msg: ServerMessage): Option[(Int, String)] =
       if msg.tpe != USER_JOINED_ROOM then None
-      else msg.data("roomId").flatMap(_.asNumber).flatMap(_.toInt)
+      else {
+        for {
+          roomId <- msg.data("roomId").flatMap(_.asNumber).flatMap(_.toInt)
+          userId <- msg.data("userId").flatMap(_.asString)
+        } yield (roomId, userId)
+      }
   }
 
   object ReadySync {
@@ -102,4 +107,15 @@ object ServerMessage:
     def unapply(msg: ServerMessage): Option[Option[String]] =
       if msg.tpe != GAME_RESULT then None
       else Some(msg.data("winner").flatMap(_.asString))
+  }
+
+  object RoomCreated {
+    def unapply(msg: ServerMessage): Option[(Int, String)] =
+      if msg.tpe != ROOM_CREATED then None
+      else {
+        for {
+          roomId <- msg.data("roomId").flatMap(_.asNumber).flatMap(_.toInt)
+          roomName <- msg.data("roomName").flatMap(_.asString)
+        } yield (roomId, roomName)
+      }
   } 

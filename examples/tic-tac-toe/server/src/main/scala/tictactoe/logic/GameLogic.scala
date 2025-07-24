@@ -20,7 +20,7 @@ import tictactoe.message.out.ReadySync
 
 final private class GameLogic(hub: ActorRef[OutgoingMessage], context: ActorContext[Msg]) {
 
-  private val logger = context.log
+  private val logger = org.slf4j.LoggerFactory.getLogger("Game")
 
   def waiting(state: Waiting): Behavior[Msg] = Behaviors.receiveMessagePartial {
     case ReadyToggle(userId) =>
@@ -41,11 +41,19 @@ final private class GameLogic(hub: ActorRef[OutgoingMessage], context: ActorCont
       } else waiting(updatedState)
 
     case Join(player) =>
-      logger.info(s"user ${player.userId} joined)")
-      waiting(state.copy(player2 = Some(player)))
+      logger.info(s"🎮 Player ${player.userId} joined the room")
+      val updatedState = state.copy(player2 = Some(player))
+      
+      // Send ReadySync to all players so everyone knows about the current player list
+      logger.info(s"📤 Broadcasting player list update to ${updatedState.players.size} players: ${updatedState.players.map(_.userId).mkString(", ")}")
+      updatedState.players foreach { p =>
+        hub ! ReadySync(p.userId, updatedState.players)
+      }
+      
+      waiting(updatedState)
   }
 
-  private def playing(state: Playing): Behavior[Msg] = Behaviors.receiveMessage { case Move(player, x, y) =>
+  private def playing(state: Playing): Behavior[Msg] = Behaviors.receiveMessage { case Msg.Move(player, x, y) =>
     val isCorrectTurn = player == state.currentTurn
     if isCorrectTurn then {
       state.board.move(state.turnMark, x, y) match
@@ -99,22 +107,90 @@ object GameLogic:
   case class Board(cells: Vector[Vector[Cell]]) {
 
     def currentTurnWon: Boolean = {
-      def checkLine(line: Vector[Cell]): Boolean =
-        line.forall(_.mark == line.head.mark) && line.head.mark.nonEmpty
+      val size = cells.size
+      val winLength = 5
 
-      // Check rows
-      val rowsWon = cells.exists(checkLine)
+      def isValidPos(x: Int, y: Int): Boolean = x >= 0 && x < size && y >= 0 && y < size
 
-      // Check columns
-      val colsWon = cells.indices.exists { colIndex =>
-        checkLine(cells.map(row => row(colIndex)))
+      def getCell(x: Int, y: Int): Option[Mark] = 
+        if (isValidPos(x, y)) cells(y)(x).mark else None
+
+      def findLongestSequence(startX: Int, startY: Int, dx: Int, dy: Int): (Int, Int, Int) = {
+        // Find the start of the entire sequence (go backwards first)
+        val mark = getCell(startX, startY)
+        if (mark.isEmpty) return (0, 0, 0)
+
+        // Find the actual start of the sequence by going backwards
+        var seqStartX = startX
+        var seqStartY = startY
+        while (isValidPos(seqStartX - dx, seqStartY - dy) && getCell(seqStartX - dx, seqStartY - dy) == mark) {
+          seqStartX -= dx
+          seqStartY -= dy
+        }
+
+        // Count the full sequence length from the actual start
+        var count = 0
+        var x = seqStartX
+        var y = seqStartY
+        while (isValidPos(x, y) && getCell(x, y) == mark) {
+          count += 1
+          x += dx
+          y += dy
+        }
+
+        (count, seqStartX, seqStartY)
       }
 
-      // Check diagonals
-      val mainDiagonalWon = checkLine(cells.indices.map(i => cells(i)(i)).toVector)
-      val antiDiagonalWon = checkLine(cells.indices.map(i => cells(i)(cells.size - 1 - i)).toVector)
+      def checkDirection(startX: Int, startY: Int, dx: Int, dy: Int): Boolean = {
+        val mark = getCell(startX, startY)
+        if (mark.isEmpty) return false
 
-      rowsWon || colsWon || mainDiagonalWon || antiDiagonalWon
+        val (sequenceLength, seqStartX, seqStartY) = findLongestSequence(startX, startY, dx, dy)
+        
+        if (sequenceLength >= winLength) {
+          // Check if both ends of the ENTIRE sequence are blocked by opponent pieces
+          val beforeX = seqStartX - dx
+          val beforeY = seqStartY - dy
+          val afterX = seqStartX + (sequenceLength * dx)
+          val afterY = seqStartY + (sequenceLength * dy)
+          
+          val beforeBlocked = getCell(beforeX, beforeY).exists(m => m != mark.get)
+          val afterBlocked = getCell(afterX, afterY).exists(m => m != mark.get)
+          
+          // Win if not blocked on both ends
+          !(beforeBlocked && afterBlocked)
+        } else {
+          false
+        }
+      }
+
+      // Check all positions and directions
+      val directions = Vector((1, 0), (0, 1), (1, 1), (1, -1)) // horizontal, vertical, diagonal, anti-diagonal
+
+      // Track checked sequences to avoid duplicates
+      val checkedSequences = scala.collection.mutable.Set[(Int, Int, Int, Int)]()
+
+      // Check if any position has a winning sequence
+      (for {
+        y <- 0 until size
+        x <- 0 until size
+        (dx, dy) <- directions
+        if !checkedSequences.contains((x, y, dx, dy))
+      } yield {
+        val result = checkDirection(x, y, dx, dy)
+        if (getCell(x, y).nonEmpty) {
+          // Mark this entire sequence as checked by finding its start and marking all positions
+          val (_, seqStartX, seqStartY) = findLongestSequence(x, y, dx, dy)
+          var cx = seqStartX
+          var cy = seqStartY
+          while (isValidPos(cx, cy) && getCell(cx, cy) == getCell(x, y)) {
+            checkedSequences.add((cx, cy, dx, dy))
+            cx += dx
+            cy += dy
+          }
+        }
+        result
+      }).exists(identity)
     }
 
     def isFull: Boolean =
@@ -175,13 +251,30 @@ object GameLogic:
       } else None
   }
 
+  object Move {
+    val MOVE = 12
+    def unapply(action: Action): Option[(String, Int, Int)] =
+      if (action.tpe == MOVE) {
+        action.payload.flatMap { payload =>
+          for {
+            x <- payload("x").flatMap(_.asNumber).flatMap(_.toInt)
+            y <- payload("y").flatMap(_.asNumber).flatMap(_.toInt)
+          } yield (action.userId, x, y)
+        }
+      } else None
+  }
+
   def adapter(hub: ActorRef[OutgoingMessage], username: String): Behavior[RoomMessage] = Behaviors.setup(context =>
     val gameLogic = context.spawnAnonymous(GameLogic(hub, username))
     val convert: RoomMessage => Msg = {
       case Action.JoinRoom(userId) =>
         Msg.Join(Player(userId))
+      case RoomMessage.UserJoined(userId) =>
+        Msg.Join(Player(userId))
       case Ready(userId) =>
         Msg.ReadyToggle(userId)
+      case GameLogic.Move(userId, x, y) =>
+        Msg.Move(Player(userId), x, y)
     }
     Behaviors.receiveMessage[RoomMessage] { msg =>
       gameLogic ! convert(msg)

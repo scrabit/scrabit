@@ -15,6 +15,8 @@ import tyrian.websocket.WebSocketEvent
 import tyrian.Sub
 import io.scrabit.example.tictactoe.model.*
 import io.scrabit.example.tictactoe.model.State.*
+import cats.effect.std.Dispatcher
+import java.awt.print.Book
 
 package object model {
 
@@ -23,15 +25,17 @@ package object model {
     def updateRoomList(rooms: List[Room]): State =
       lobby match
         case None =>
-          copy(lobby = Some(Lobby(rooms, "")))
+          copy(lobby = Some(Lobby(rooms, "", "")))
         case Some(lb) =>
           copy(lobby = Some(lb.copy(rooms = rooms)))
     def updateSessionKey(key: String): State =
-      lobby match
+      val updatedLoginState = loginState.copy(sessionKey = Some(key))
+      val updatedLobby = lobby match
         case None =>
-          copy(lobby = Some(Lobby(Nil, key)))
+          Some(Lobby(Nil, key, ""))
         case Some(lb) =>
-          copy(lobby = Some(lb.copy(sessionKey = key)))
+          Some(lb.copy(sessionKey = key))
+      copy(loginState = updatedLoginState, lobby = updatedLobby)
 
     def joinedRoom(roomId: Int, roomName: String): State =
       copy(game = Some(Game(roomName = roomName, roomId = roomId, players = Nil, isMyTurn = false, Board.empty)))
@@ -49,8 +53,9 @@ package object model {
           copy(game = Some(g.copy(board = board, isMyTurn = isMyTurn)))
 
     def gameEnded(winner: Option[String]): State =
-      // Could reset to lobby or show game over screen
-      this
+      game match
+        case None => this
+        case Some(g) => copy(game = Some(g.copy(winner = winner)))
   }
 
   object State {
@@ -60,8 +65,10 @@ package object model {
     }
 
     case class Room(id: Int, owner: String, name: String)
-    case class Lobby(rooms: List[Room], sessionKey: String)
-    case class Game(roomName: String, roomId: Int, players: List[Player], isMyTurn: Boolean, board: Board)
+    case class Lobby(rooms: List[Room], sessionKey: String, newRoomName: String)
+    case class Game(roomName: String, roomId: Int, players: List[Player], isMyTurn: Boolean, board: Board, winner: Option[String] = None) {
+      def isGameOver: Boolean = winner.isDefined
+    }
     case class Player(userId: String, isReady: Boolean)
 
     enum Mark:
@@ -77,22 +84,25 @@ package object model {
     }
 
     val init: State =
-      val emptyLoginState = LoginState("", "", None)
+      val emptyLoginState = LoginState("rabbit1", "sc@la", None)
       State(emptyLoginState, Socket.init, Nil, None, None)
   }
 
-  case class Socket(socketUrl: String, socket: Option[WebSocket[IO]]):
-    def connectDisconnectButton =
-      if socket.isDefined then button(onClick(Socket.Status.Disconnecting.asMsg))("Disconnect")
-      else button(onClick(Socket.Status.Connecting.asMsg))("Connect")
+  case class Socket(socketUrl: String, status: Socket.Status):
+    def isConnected: Boolean = status match
+       case Socket.Status.Connected(_) => 
+         true
+       case _ =>
+         false
+    
 
     def update(status: Socket.Status): (Socket, Cmd[IO, Msg]) =
       status match
         case Socket.Status.ConnectionError(err) =>
           (this, Logger.error(s"Failed to open WebSocket connection: $err"))
 
-        case Socket.Status.Connected(ws) =>
-          (this.copy(socket = Some(ws)), Cmd.None)
+        case connected @ Socket.Status.Connected(_) =>
+          (this.copy(status = connected), Logger.error("wrong..."))
 
         case Socket.Status.Connecting =>
           val connect =
@@ -107,38 +117,46 @@ package object model {
                 Socket.Status.Connected(ws).asMsg
             }
 
-          (this, connect)
+          (this.copy(status = Socket.Status.Connecting), connect)
 
         case Socket.Status.Disconnecting =>
-          val log = Logger.info[IO]("Graceful shutdown of EchoSocket connection")
-          val cmds =
-            socket.map(ws => Cmd.Batch(log, ws.disconnect)).getOrElse(log)
-
-          (this.copy(socket = None), cmds)
+          val cmd = this.status match
+              case Socket.Status.Connected(ws) =>
+                  ws.disconnect
+              case _ => Cmd.None
+          (this.copy(status = Socket.Status.Disconnecting), cmd)
 
         case Socket.Status.Disconnected =>
           (this, Logger.info("WebSocket not connected yet"))
 
     def publish(message: String): Cmd[IO, Msg] =
-      socket.map(_.publish(message)).getOrElse(Cmd.None)
+      status.ws.map(_.publish(message)).getOrElse(Cmd.None)
 
     def subscribe(toMessage: WebSocketEvent => Msg): Sub[IO, Msg] =
-      socket.fold(Sub.emit[IO, Msg](Socket.Status.Disconnected.asMsg)) {
+      status.ws.fold(Sub.emit[IO, Msg](Socket.Status.Disconnected.asMsg)) {
         _.subscribe(toMessage)
       }
 
   object Socket:
     val init: Socket =
-      Socket("ws://localhost:8080/", None)
+      Socket("ws://localhost:8080/", Status.Disconnected)
 
     enum Status:
       case Connecting
-      case Connected(ws: WebSocket[IO])
+      case Connected(connection: WebSocket[IO])
       case ConnectionError(msg: String)
       case Disconnecting
       case Disconnected
 
       def asMsg: Msg = Msg.WebSocketStatus(this)
+
+      def ws: Option[WebSocket[IO]] = this match
+         case Connected(ws) =>
+           Some(ws)
+         case _ => 
+           None
+
+      
 
   enum Msg:
     case WebSocketStatus(status: Socket.Status)
@@ -153,5 +171,12 @@ package object model {
     case UpdateReadyState(players: List[Player])
     case UpdateBoard(currentTurn: String, board: Board)
     case GameResult(winner: Option[String])
+    case ToggleReady           // NEW: ready/unready for game
+    case MakeMove(x: Int, y: Int) // NEW: place X/O on board
+    case BackToLobby           // NEW: leave game room
+    case JoinSpecificRoom(roomId: Int) // NEW: join a specific room
+    case UpdateNewRoomName(name: String) // NEW: update new room name input
+    case UserJoinedRoom(roomId: Int, userId: String) // NEW: track when other users join rooms
+    case RestartGame // NEW: restart the current game
     case NoOp
 }

@@ -11,7 +11,7 @@ import io.circe.syntax.*
 import io.scrabit.example.tictactoe.model.*
 import io.scrabit.example.tictactoe.model.Msg.*
 import io.scrabit.example.tictactoe.model.Request.*
-import io.scrabit.example.tictactoe.view.Menu
+import io.scrabit.example.tictactoe.view.{Menu, LobbyView, GameView}
 
 
 @JSExportTopLevel("TyrianApp")
@@ -43,8 +43,12 @@ object Main extends TyrianIOApp[Msg, State]:
         case Some(ServerMessage.LobbyInfo(rooms)) =>
           Msg.UpdateLobby(rooms)
 
-        case Some(ServerMessage.JoinedRoom(id)) =>
-          Msg.JoinRoom(id, "changeme")
+        case Some(ServerMessage.JoinedRoom(roomId, userId)) =>
+          if (userId == model.loginState.username) {
+            Msg.JoinRoom(roomId, "Game Room")
+          } else {
+            Msg.UserJoinedRoom(roomId, userId)
+          }
 
         case Some(ServerMessage.ReadySync(players)) =>
           Msg.UpdateReadyState(players)
@@ -54,6 +58,9 @@ object Main extends TyrianIOApp[Msg, State]:
 
         case Some(ServerMessage.GameResult(winner)) =>
           Msg.GameResult(winner)
+
+        case Some(ServerMessage.RoomCreated(roomId, roomName)) =>
+          Msg.JoinRoom(roomId, roomName)
 
       val cmds = Cmd.Batch(logWS, Cmd.Emit(msg))
       (model.copy(log = message :: model.log), cmds)
@@ -66,8 +73,25 @@ object Main extends TyrianIOApp[Msg, State]:
     case Msg.CreateRoom(name) =>
       (model, Cmd.Emit(Msg.SendRequest(CreateRoomRequest(name).asJsonObject.asJson.noSpaces)))
 
+    case Msg.JoinSpecificRoom(roomId) =>
+      (model, Cmd.Emit(Msg.SendRequest(JoinRoomRequest(roomId).asJsonObject.asJson.noSpaces)))
+
+    case Msg.ToggleReady =>
+      (model, Cmd.Emit(Msg.SendRequest(ReadyRequest().asJsonObject.asJson.noSpaces)))
+
+    case Msg.MakeMove(x, y) =>
+      if (model.game.exists(_.isMyTurn)) {
+        (model, Cmd.Emit(Msg.SendRequest(MoveRequest(x, y).asJsonObject.asJson.noSpaces)))
+      } else {
+        (model, Logger.info("Not your turn!"))
+      }
+
+    case Msg.BackToLobby =>
+      // Reset game state and stay in lobby
+      (model.copy(game = None), Cmd.None)
+
     case Msg.UpdateLoginState(newState) =>
-      (model.copy(loginState = newState),Cmd.None)
+      (model.copy(loginState = newState), Cmd.None)
 
     case Msg.UpdateLobby(rooms) =>
       (model.updateRoomList(rooms), Cmd.None)
@@ -102,11 +126,54 @@ object Main extends TyrianIOApp[Msg, State]:
     case Msg.UpdateSessionKey(key) =>
       (model.updateSessionKey(key), Cmd.None)
 
+    case Msg.UpdateNewRoomName(name) =>
+      val updatedLobby = model.lobby.map(_.copy(newRoomName = name))
+      (model.copy(lobby = updatedLobby), Cmd.None)
+
+    case Msg.UserJoinedRoom(roomId, userId) =>
+      model.game match {
+        case Some(game) if game.roomId == roomId =>
+          // Add the new user to the current game's player list
+          val newPlayer = State.Player(userId, isReady = false)
+          val existingPlayerIds = game.players.map(_.userId).toSet
+          val updatedPlayers = if (existingPlayerIds.contains(userId)) {
+            game.players // User already in list, don't duplicate
+          } else {
+            game.players :+ newPlayer
+          }
+          val updatedGame = game.copy(players = updatedPlayers)
+          (model.copy(game = Some(updatedGame)), Logger.info(s"User $userId joined room $roomId"))
+        case _ =>
+          // Not in the same room or not in any game
+          (model, Logger.info(s"User $userId joined room $roomId (different room)"))
+      }
+
+    case Msg.RestartGame =>
+      model.game match {
+        case Some(game) =>
+          // Reset the game board and winner, but keep players and room info
+          val resetGame = game.copy(board = State.Board.empty, winner = None, isMyTurn = false)
+          (model.copy(game = Some(resetGame)), Logger.info("Game restarted"))
+        case None =>
+          (model, Cmd.None)
+      }
+
     case Msg.NoOp =>
       (model, Cmd.None)
 
   def view(state: State): Html[Msg] =
-    div(cls :="center")(Menu(state))
+    div(cls := "center")(
+      if (!state.loginState.isLoggedIn) {
+        // Show login screen
+        Menu(state)
+      } else if (state.game.isEmpty) {
+        // Show lobby
+        LobbyView(state)
+      } else {
+        // Show game
+        GameView(state)
+      }
+    )
 
   def subscriptions(state: State): Sub[IO, Msg] =
     state.echoSocket.subscribe {

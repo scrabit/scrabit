@@ -21,6 +21,7 @@ object Request {
   private val CREATE_ROOM = 3
   private val JOIN_ROOM   = 2
   private val READY       = 11
+  private val MOVE        = 12 // NEW: for board moves
 
   case class CreateRoomRequest(name: String) extends Request {
     override def sessionKey: String = "" // Will be set when sending
@@ -38,5 +39,12 @@ object Request {
     override def sessionKey: String = "" // Will be set when sending
     override def tpe: Int = READY
     override def payload: Option[Json] = None
+  }
+
+  // NEW: Move request for tic-tac-toe
+  case class MoveRequest(x: Int, y: Int) extends Request {
+    override def sessionKey: String = "" // Will be set when sending
+    override def tpe: Int = MOVE
+    override def payload: Option[Json] = Some(Json.obj("x" -> x.asJson, "y" -> y.asJson))
   }
 } 

@@ -42,10 +42,16 @@ object OutgoingMessage:
     override def data: Json = Json.obj("error" -> error.asJson)
   }
 
-  case class UserJoinedRoom(recipient: String, roomId: Int) extends OutgoingMessage {
+  case class UserJoinedRoom(recipient: String, roomId: Int, userId: String) extends OutgoingMessage {
     override val tpe: Int = USER_JOINED_ROOM
 
-    override def data: Json = Json.obj("roomId" -> roomId.asJson)
+    override def data: Json = Json.obj("roomId" -> roomId.asJson, "userId" -> userId.asJson)
+  }
+
+  case class RoomCreated(recipient: String, roomId: Int, roomName: String) extends OutgoingMessage {
+    override val tpe: Int = ROOM_CREATED
+
+    override def data: Json = Json.obj("roomId" -> roomId.asJson, "roomName" -> roomName.asJson)
   }
 
 end OutgoingMessage

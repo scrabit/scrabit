@@ -4,13 +4,13 @@ import io.scrabit.actor.CommunicationHub.Data.RoomIdSpace
 import io.scrabit.actor.message.*
 import io.scrabit.actor.message.IncomingMessage.Request.*
 import io.scrabit.actor.message.IncomingMessage.{Request, SessionMessage}
-import io.scrabit.actor.message.OutgoingMessage.{LoginSuccess, UserJoinedRoom}
-import io.scrabit.actor.message.RoomMessage.RoomCreated
+import io.scrabit.actor.message.OutgoingMessage.{LoginSuccess, UserJoinedRoom, RoomCreated}
 import io.scrabit.actor.session.AuthenticationService
 import org.apache.pekko.actor.typed.*
 import org.apache.pekko.actor.typed.receptionist.{Receptionist, ServiceKey}
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 
+//TODO: need to separate between Command and Event
 object CommunicationHub:
 
   sealed trait InternalMessage
@@ -102,6 +102,7 @@ object CommunicationHub:
     lobby: ActorRef[LobbyMessage],
     context: ActorContext[Message]
   ) {
+    private val logger = org.slf4j.LoggerFactory.getLogger("Hub")
     def apply(data: Data): Behavior[Message] = Behaviors.receiveMessagePartial {
       case IncomingMessage.Login(userId, password, connection) =>
         // if (data.users.contains(userId)) {
@@ -118,7 +119,7 @@ object CommunicationHub:
           context.unwatch(connection)
         }
 
-        context.log.info(s"store new session for $userId with sessionKey $sessionKey")
+        logger.info(s"store new session for $userId with sessionKey $sessionKey")
         val updatedData = data.newSession(userId, sessionKey, connection)
         context.self ! LoginSuccess(userId, sessionKey)
         lobby ! LobbyMessage.LoggedIn(userId)
@@ -126,7 +127,7 @@ object CommunicationHub:
         apply(updatedData)
 
       case UserDisconnected(userId, connection) =>
-        context.log.debug(s"Connection disconnected: $connection from userId: $userId")
+        logger.debug(s"Connection disconnected: $connection from userId: $userId")
         data.users.get(userId) match {
           case None =>
             apply(data.removeConnection(connection))
@@ -140,7 +141,7 @@ object CommunicationHub:
       case SessionMessage(sessionKey, tpe, payload) =>
         data.sessions.get(sessionKey) match {
           case None =>
-            context.log.warn(s"invalid sessionKey: $sessionKey. Message type $tpe")
+            logger.warn(s"invalid sessionKey: $sessionKey. Message type $tpe")
           case Some(userId) =>
             context.self ! IncomingMessage.Request(userId, tpe, payload)
         }
@@ -150,23 +151,37 @@ object CommunicationHub:
         val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(behavior, s"room-${roomId}")
         data.addRoom(spawnActor) match {
           case None =>
-            context.log.warn("Cannot create new room: reached max room limit")
+            logger.warn("Cannot create new room: reached max room limit")
             Behaviors.same
           case Some((updatedData, roomId, ref)) =>
-            context.log.info(s"Created room $roomName - id: $roomId")
-            context.self ! JoinRoomAccepted(owner, roomId)
-            lobby ! LobbyMessage.GameRoomCreated(roomId, owner, ref)
-            apply(updatedData)
+            logger.info(s"Created room $roomName - id: $roomId")
+            // Automatically join the owner to the newly created room
+            updatedData.userJoinRoom(owner, roomId) match {
+              case Left(msg) =>
+                logger.error(s"Failed to auto-join room creator: $msg")
+                Behaviors.same
+              case Right(finalData) =>
+                // Notify owner that room was created and they're inside it
+                context.self ! RoomCreated(owner, roomId, roomName)
+                lobby ! LobbyMessage.GameRoomCreated(roomId, owner, ref)
+                apply(finalData)
+            }
         }
 
       case JoinRoomAccepted(userId, roomId) =>
         data.userJoinRoom(userId, roomId) match {
           case Left(msg) =>
-            context.log.info(s"Failed to join. $msg")
+            logger.info(s"Failed to join. $msg")
             Behaviors.same
           case Right(updatedData) =>
-            context.log.info(s"User $userId joined room $roomId")
-            context.self ! UserJoinedRoom(userId, roomId)
+            logger.info(s"User $userId joined room $roomId")
+            updatedData.users.values.filter(_.roomId == roomId) foreach {session =>
+               context.self ! UserJoinedRoom(session.userId, roomId, userId) // notify all users in room
+            }
+            // Notify the room actor that a user has joined
+            updatedData.rooms.get(roomId) foreach { roomActor =>
+              roomActor ! RoomMessage.UserJoined(userId)
+            }
             apply(updatedData)
         }
 
@@ -177,25 +192,25 @@ object CommunicationHub:
       case CreateRoom(userId, roomName) =>
         if data.users.get(userId).exists(_.roomId == LOBBY_ROOM_ID)
         then lobby ! LobbyMessage.CreateRoomRequest(userId, roomName)
-        else context.log.warn(s"User $userId sent invalid CreateRoom Request")
+        else logger.warn(s"User $userId sent invalid CreateRoom Request")
         Behaviors.same
 
       case req: Request =>
         data.users.get(req.userId) match {
           case None =>
-            context.log.error(s"userId ${req.userId} not exist")
+            logger.error(s"userId ${req.userId} not exist")
           case Some(session) =>
-            context.log.error(s"in --> ${req.userId}: ${req.toAction}")
+            logger.error(s"in --> ${req.userId}: ${req.toAction}")
             data.rooms.get(session.roomId) foreach { _ ! req.toAction }
         }
         Behaviors.same
 
       case out: OutgoingMessage =>
         val recipient = out.recipient
-        context.log.debug(s"out <-- $recipient: ${out.toWsMessage}")
+        logger.debug(s"out <-- $recipient: ${out.toWsMessage}")
         data.users.get(recipient) match
           case None =>
-            context.log.error(s"Error: $recipient not found")
+            logger.error(s"Error: $recipient not found")
           case Some(userSession) =>
             userSession.connection ! out
         Behaviors.same
