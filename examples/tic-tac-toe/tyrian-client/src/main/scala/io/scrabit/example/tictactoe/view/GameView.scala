@@ -17,12 +17,28 @@ object GameView {
       if (game.isGameOver) {
         gameOverView(game, state.loginState.username)
       } else {
-        div(cls := "game-container")(
-          gameHeader(game, state.loginState.username),
-          playerStatus(game.players, state.loginState.username),
-          GameBoard(game.board, game.isMyTurn && !game.isGameOver),
-          gameControls(game.players, state.loginState.username)
-        )
+        val allPlayersReady = game.players.size == 2 && game.players.forall(_.isReady)
+        
+        if (allPlayersReady) {
+          // All players ready - show full game view with board
+          div(cls := "game-container")(
+            gameHeader(game, state.loginState.username),
+            playerStatus(game.players, state.loginState.username),
+            GameBoard(game.board, game.isMyTurn && !game.isGameOver),
+            gameControls(game.players, state.loginState.username)
+          )
+        } else {
+          // In room but not all players ready - show room lobby
+          div(cls := "room-lobby-container")(
+            gameHeader(game, state.loginState.username),
+            playerStatus(game.players, state.loginState.username),
+            div(cls := "waiting-message nes-container")(
+              h4("🎮 Waiting for all players to be ready..."),
+              p("The game will start once everyone is ready!")
+            ),
+            gameControls(game.players, state.loginState.username)
+          )
+        }
       }
   }
 
