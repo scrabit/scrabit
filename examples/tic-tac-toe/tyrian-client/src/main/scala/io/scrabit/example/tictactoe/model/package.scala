@@ -17,8 +17,26 @@ import io.scrabit.example.tictactoe.model.*
 import io.scrabit.example.tictactoe.model.State.*
 import cats.effect.std.Dispatcher
 import java.awt.print.Book
+import scala.util.Random
+import io.scrabit.example.tictactoe.model.UsernameGenerator.generateRandomUsername
 
 package object model {
+
+  // Random username generator
+  object UsernameGenerator {
+    private val animals = Vector(
+      "cat", "dog", "rabbit", "bear", "lion", "tiger", "wolf", "fox", 
+      "elephant", "monkey", "panda", "zebra", "giraffe", "horse", "cow", 
+      "pig", "sheep", "goat", "duck", "chicken"
+    )
+    
+    def generateRandomUsername(): String = {
+      val animal = animals(Random.nextInt(animals.length))
+      val number = Random.nextInt(999) + 1 // 1 to 999
+      val paddedNumber = f"$number%03d" // Zero-pad to 3 digits
+      s"$animal$paddedNumber"
+    }
+  }
 
   case class State(loginState: LoginState, echoSocket: Socket, log: List[String], lobby: Option[Lobby], game: Option[Game]) {
     def loggedIn: Boolean = lobby.nonEmpty
@@ -84,7 +102,7 @@ package object model {
     }
 
     val init: State =
-      val emptyLoginState = LoginState("rabbit1", "sc@la", None)
+      val emptyLoginState = LoginState(generateRandomUsername(), "sc@la", None)
       State(emptyLoginState, Socket.init, Nil, None, None)
   }
 
