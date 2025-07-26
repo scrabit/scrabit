@@ -37,7 +37,7 @@ object LobbyView {
           div(cls := "room-item nes-container with-title")(
             h4(cls := "title")(s"Room: ${room.name}"),
             p(s"Owner: ${room.owner}"),
-            button(cls := "nes-btn is-primary", onClick(Msg.JoinSpecificRoom(room.id)))("Join Room")
+            button(cls := "nes-btn is-primary", onClick(Msg.JoinSpecificRoom(room.id)))(s"Join ${room.name}")
           )
         }*
       )
