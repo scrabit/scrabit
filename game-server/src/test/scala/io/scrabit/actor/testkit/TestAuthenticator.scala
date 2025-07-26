@@ -1,4 +1,4 @@
-package io.scrabit.test.actor.testkit
+package io.scrabit.actor.testkit
 
 import io.scrabit.actor.CommunicationHub.SessionCreated
 import io.scrabit.actor.session.AuthenticationService.Login

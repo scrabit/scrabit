@@ -11,25 +11,24 @@ sealed trait IncomingMessage
 
 object IncomingMessage:
   case class RawMessage(text: String, connection: ActorRef[OutgoingMessage]) extends IncomingMessage // RawMessage -> Request / Login / discarded
+
   case class Request(
     userId: String, // userId is reliable because session is already verified
     tpe: Int,
     payload: Option[JsonObject]
   ) extends IncomingMessage {
 
-    def toAction: Option[Action] = tpe.refineOption[Greater[9]].map(Action(userId, _, payload))
+    def toAction: Action = Action(userId, tpe, payload)
   }
 
   object Request {
-    private val JOIN_ROOM    = 3
-    val CREATE_ROOM          = 4
-    private val READY        = 5
-    private val PLAYER_REPLY = 8
+    private[message] val JOIN_ROOM   = 2
+     val CREATE_ROOM = 3
 
     object JoinRoom {
-      def unapply(req: Request): Option[(String, String)] =
+      def unapply(req: Request): Option[(String, Int)] =
         if (req.tpe == JOIN_ROOM) {
-          req.payload.flatMap(json => json("roomId").flatMap(_.asString).map(roomId => (req.userId, roomId)))
+          req.payload.flatMap(json => json("roomId").flatMap(_.asNumber.flatMap(_.toInt)).map(roomId => (req.userId, roomId)))
         } else None
     }
 
@@ -53,7 +52,7 @@ object IncomingMessage:
 
   object Login {
     private val PREFIX      = "LOGIN-" // LOGIN-<userId>/<password>
-    private val userIdRegex = s"$PREFIX(.+)/(.+)".r
+    private val userIdRegex = s"$PREFIX(.+)/(.*)".r 
 
     private def parseCredentials(text: String): Option[(String, String)] =
       userIdRegex.findFirstMatchIn(text).map(matched => (matched.group(1), matched.group(2)))

@@ -9,3 +9,11 @@ project/project/project
 target
 .bsp/sbt.json
 examples/coin-flip-ultimate/src/main/.DS_Store
+examples/tic-tac-toe/client2/.parcel-cache
+examples/tic-tac-toe/client2/dist
+examples/tic-tac-toe/client2/node_modules
+examples/tic-tac-toe/tyrian-client/node_modules
+examples/tic-tac-toe/tyrian-client/node_modules
+examples/tic-tac-toe/tyrian-client/node_modules
+.vscode
+examples/tic-tac-toe/tyrian-client/.vite/deps

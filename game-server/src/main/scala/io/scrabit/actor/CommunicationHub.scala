@@ -4,13 +4,13 @@ import io.scrabit.actor.CommunicationHub.Data.RoomIdSpace
 import io.scrabit.actor.message.*
 import io.scrabit.actor.message.IncomingMessage.Request.*
 import io.scrabit.actor.message.IncomingMessage.{Request, SessionMessage}
-import io.scrabit.actor.message.OutgoingMessage.{LoginSuccess, UserJoinedRoom}
-import io.scrabit.actor.message.RoomMessage.RoomCreated
+import io.scrabit.actor.message.OutgoingMessage.{LoginSuccess, UserJoinedRoom, RoomCreated}
 import io.scrabit.actor.session.AuthenticationService
 import org.apache.pekko.actor.typed.*
 import org.apache.pekko.actor.typed.receptionist.{Receptionist, ServiceKey}
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 
+//TODO: need to separate between Command and Event
 object CommunicationHub:
 
   sealed trait InternalMessage
@@ -34,7 +34,7 @@ object CommunicationHub:
 
   case class SessionCreated(userId: String, sessionKey: String, connection: ActorRef[OutgoingMessage]) extends InternalMessage
 
-  case class JoinRoom(userId: String, roomId: Int) extends InternalMessage
+  case class JoinRoomAccepted(userId: String, roomId: Int) extends InternalMessage
 
   object Data {
 
@@ -102,13 +102,13 @@ object CommunicationHub:
     lobby: ActorRef[LobbyMessage],
     context: ActorContext[Message]
   ) {
+    private val logger = org.slf4j.LoggerFactory.getLogger("Hub")
     def apply(data: Data): Behavior[Message] = Behaviors.receiveMessagePartial {
       case IncomingMessage.Login(userId, password, connection) =>
-        if (data.users.contains(userId)) {
-          context.log.warn(s"User $userId already Logged in")
-        } else {
-          authenticationService ! AuthenticationService.Login(userId, password, connection, context.self)
-        }
+        // if (data.users.contains(userId)) {
+        //   context.log.warn(s"User $userId already Logged in")
+        // } else {
+        authenticationService ! AuthenticationService.Login(userId, password, connection, context.self)
         Behaviors.same
 
       case SessionCreated(userId, sessionKey, connection) =>
@@ -119,15 +119,15 @@ object CommunicationHub:
           context.unwatch(connection)
         }
 
-        context.log.info(s"store new session for $userId with sessionKey $sessionKey")
+        logger.info(s"store new session for $userId with sessionKey $sessionKey")
         val updatedData = data.newSession(userId, sessionKey, connection)
         context.self ! LoginSuccess(userId, sessionKey)
-        lobby ! LobbyMessage.UserJoined(userId)
+        lobby ! LobbyMessage.LoggedIn(userId)
         context.watchWith(connection, UserDisconnected(userId, connection))
         apply(updatedData)
 
       case UserDisconnected(userId, connection) =>
-        context.log.debug(s"Connection disconnected: $connection from userId: $userId")
+        logger.debug(s"Connection disconnected: $connection from userId: $userId")
         data.users.get(userId) match {
           case None =>
             apply(data.removeConnection(connection))
@@ -141,122 +141,80 @@ object CommunicationHub:
       case SessionMessage(sessionKey, tpe, payload) =>
         data.sessions.get(sessionKey) match {
           case None =>
-            context.log.warn(s"invalid sessionKey: $sessionKey. Message type $tpe")
+            logger.warn(s"invalid sessionKey: $sessionKey. Message type $tpe")
           case Some(userId) =>
             context.self ! IncomingMessage.Request(userId, tpe, payload)
         }
         Behaviors.same
 
-      // case CreateRoom(owner, roomName) =>
-      //   val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(roomBehavior, s"room-${roomId}")
-      //   data.addRoom(spawnActor) match {
-      //     case None =>
-      //       context.log.warn("Cannot create new room: reached max room limit")
-      //       Behaviors.same
-      //     case Some((updatedData, roomId, ref)) =>
-      //       context.self ! JoinRoom(owner, roomId)
-      //       ref ! RoomCreated(roomId, owner, context.self)
-      //       context.log.info(s"Created room $roomName - id: $roomId")
-      //       apply(updatedData)
-      //   }
-
       case CreateRoomGame(owner, roomName, behavior) =>
         val spawnActor: Int => ActorRef[RoomMessage] = roomId => context.spawn(behavior, s"room-${roomId}")
         data.addRoom(spawnActor) match {
           case None =>
-            context.log.warn("Cannot create new room: reached max room limit")
+            logger.warn("Cannot create new room: reached max room limit")
             Behaviors.same
           case Some((updatedData, roomId, ref)) =>
-            context.log.info(s"Created room $roomName - id: $roomId")
-            context.self ! JoinRoom(owner, roomId)
-            lobby ! LobbyMessage.GameRoomCreated(roomId, owner, ref)
+            logger.info(s"Created room $roomName - id: $roomId")
+            // Automatically join the owner to the newly created room
+            updatedData.userJoinRoom(owner, roomId) match {
+              case Left(msg) =>
+                logger.error(s"Failed to auto-join room creator: $msg")
+                Behaviors.same
+              case Right(finalData) =>
+                // Notify owner that room was created and they're inside it
+                context.self ! RoomCreated(owner, roomId, roomName)
+                lobby ! LobbyMessage.GameRoomCreated(roomId, owner, ref)
+                apply(finalData)
+            }
+        }
+
+      case JoinRoomAccepted(userId, roomId) =>
+        data.userJoinRoom(userId, roomId) match {
+          case Left(msg) =>
+            logger.info(s"Failed to join. $msg")
+            Behaviors.same
+          case Right(updatedData) =>
+            logger.info(s"User $userId joined room $roomId")
+            updatedData.users.values.filter(_.roomId == roomId) foreach {session =>
+               context.self ! UserJoinedRoom(session.userId, roomId, userId) // notify all users in room
+            }
+            // Notify the room actor that a user has joined
+            updatedData.rooms.get(roomId) foreach { roomActor =>
+              roomActor ! RoomMessage.UserJoined(userId)
+            }
             apply(updatedData)
         }
 
       case JoinRoom(userId, roomId) =>
-        // TODO: sync room state (new user) with Room Actor (?)
-        data.userJoinRoom(userId, roomId) match {
-          case Left(msg) =>
-            context.log.warn(s"Failed to join. $msg")
-            Behaviors.same
-          case Right(updatedData) =>
-            context.self ! UserJoinedRoom(userId, roomId)
-            apply(updatedData)
-        }
+        lobby ! LobbyMessage.JoinRoomRequest(userId, roomId)
+        Behaviors.same
 
       case CreateRoom(userId, roomName) =>
         if data.users.get(userId).exists(_.roomId == LOBBY_ROOM_ID)
         then lobby ! LobbyMessage.CreateRoomRequest(userId, roomName)
-        else context.log.warn(s"User $userId sent invalid CreateRoom Request")
+        else logger.warn(s"User $userId sent invalid CreateRoom Request")
         Behaviors.same
 
       case req: Request =>
         data.users.get(req.userId) match {
           case None =>
-            context.log.error(s"userId ${req.userId} not exist")
+            logger.error(s"userId ${req.userId} not exist")
           case Some(session) =>
-            req.toAction foreach { action =>
-              data.rooms(session.roomId) ! action
-            }
+            logger.error(s"in --> ${req.userId}: ${req.toAction}")
+            data.rooms.get(session.roomId) foreach { _ ! req.toAction }
         }
         Behaviors.same
 
       case out: OutgoingMessage =>
-        val recipient = out.userId
-        context.log.debug(s"out <-- $recipient: ${out.toWsMessage}")
+        val recipient = out.recipient
+        logger.debug(s"out <-- $recipient: ${out.toWsMessage}")
         data.users.get(recipient) match
           case None =>
-            context.log.error(s"Error: $recipient not found")
+            logger.error(s"Error: $recipient not found")
           case Some(userSession) =>
             userSession.connection ! out
         Behaviors.same
     }
   }
-
-  //   case SessionMessage(sessionId, roomId, tpe, jsonData) =>
-  //     data.sessions.get(sessionId) match {
-  //       case None =>
-  //         context.log.warn(s"Received not authenticated message with session Id : $sessionId")
-  //       case Some(userId) =>
-  //         context.log.debug(s"In --> $userId type-$tpe roomId-$roomId data: $jsonData")
-  //         context.self ! UserRequest(userId, tpe, roomId, jsonData)
-  //     }
-  //     Behaviors.same
-  //
-  //
-  //   case UserRequest.CreateRoom(userId, roomName) =>
-  //       val roomId = s"${101 + data.rooms.size}"
-  //       val owner = Player.create(userId)
-  //       val room = context.spawn(Room.create(roomId, roomName, owner, context.self, lobby), s"room-$roomId")
-  //       val updatedData = data.addRoom(roomId, room)
-  //       context.log.info(s"Created room with id: $roomId.")
-  //       lobby ! RoomCreated(roomId, roomName)
-  //       live(updatedData)
-  //
-  //   case UserRequest.JoinRoom(userId, roomId) =>
-  //     data.rooms.get(roomId) foreach { roomRef =>
-  //       context.log.debug(s"user $userId joining room $roomId")
-  //       roomRef ! Room.JoinRoom(userId)
-  //     }
-  //     Behaviors.same
-  //
-  //   case UserRequest.Ready(userId, roomId) =>
-  //     data.rooms.get(roomId) foreach { roomRef =>
-  //       roomRef ! Room.ReadyToggle(userId)
-  //     }
-  //     Behaviors.same
-  //
-  //   case UserRequest.PlayerReply(userId, roomId, answer) =>
-  //     data.rooms.get(roomId) foreach { roomRef =>
-  //       roomRef ! Room.PlayerReply(userId, answer)
-  //     }
-  //     Behaviors.same
-  //
-  //
-  //
-  //
-  //   case m@ _ =>
-  //     context.log.warn(s"unhandled message $m")
-  //     Behaviors.same
 
 end CommunicationHub

@@ -1,0 +1,288 @@
+@import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Press Start 2P";
+  font-weight: 400;
+  background-color: #212529;
+  color: #fff;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Login Screen */
+.login-screen {
+  max-width: 600px;
+  width: 100%;
+}
+
+.connection-section {
+  margin-bottom: 20px;
+}
+
+.login-form {
+  margin-top: 20px;
+}
+
+.login-buttons {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.debug-log {
+  margin-top: 20px;
+  font-size: 10px;
+}
+
+.log-messages {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+/* Lobby */
+.lobby {
+  max-width: 800px;
+  width: 100%;
+}
+
+.room-section {
+  margin-bottom: 20px;
+}
+
+.room-list {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.room-item {
+  padding: 15px;
+}
+
+.room-item h4 {
+  margin: 0 0 10px 0;
+}
+
+.room-item p {
+  margin: 5px 0;
+  font-size: 12px;
+}
+
+.create-room-section {
+  margin-top: 20px;
+}
+
+.create-room-form {
+  padding: 20px;
+}
+
+.no-rooms {
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+.lobby-controls {
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* Game Screen */
+.game-container {
+  max-width: 600px;
+  width: 100%;
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.player-status {
+  margin-bottom: 20px;
+}
+
+.player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin: 5px 0;
+  border: 1px solid #666;
+  border-radius: 5px;
+}
+
+.player.current-user {
+  background-color: #0f3460;
+  border-color: #0084ff;
+}
+
+.ready {
+  color: #92cc41;
+}
+
+.not-ready {
+  color: #e76e55;
+}
+
+/* Game Board */
+.game-board {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.board {
+  display: inline-block;
+  padding: 10px;
+  max-width: 450px;
+  max-height: 450px;
+  overflow: auto;
+  border: 2px solid #666;
+  border-radius: 5px;
+}
+
+.board-row {
+  display: flex;
+  justify-content: center;
+}
+
+.cell {
+  width: 30px;
+  height: 30px;
+  margin: 1px;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fff;
+  background-color: #212529;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cell:hover:not(:disabled) {
+  background-color: #0084ff;
+  transform: scale(1.05);
+}
+
+.cell:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cell.occupied {
+  background-color: #666;
+}
+
+.cell.is-primary:not(:disabled) {
+  border-color: #0084ff;
+  background-color: #0f3460;
+}
+
+/* Game Controls */
+.game-controls {
+  text-align: center;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Game Over Screen */
+.game-over-container {
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.game-over-screen {
+  padding: 30px;
+  margin: 20px auto;
+}
+
+.winner-announcement {
+  margin: 20px 0;
+}
+
+.win-message h2 {
+  color: #92cc41;
+  font-size: 24px;
+  margin: 10px 0;
+  animation: bounce 1s ease-in-out infinite alternate;
+}
+
+.lose-message h2 {
+  color: #e76e55;
+  font-size: 24px;
+  margin: 10px 0;
+}
+
+.draw-message h2 {
+  color: #0084ff;
+  font-size: 24px;
+  margin: 10px 0;
+}
+
+.final-board {
+  margin: 20px 0;
+  opacity: 0.8;
+}
+
+.final-board h4 {
+  margin-bottom: 15px;
+  color: #ccc;
+}
+
+.game-over-controls {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 25px;
+}
+
+@keyframes bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-10px); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .center {
+    padding: 10px;
+  }
+  
+  .cell {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    margin: 0.5px;
+  }
+  
+  .board {
+    max-width: 300px;
+    max-height: 300px;
+    padding: 5px;
+  }
+  
+  .control-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .room-list {
+    grid-template-columns: 1fr;
+  }
+}

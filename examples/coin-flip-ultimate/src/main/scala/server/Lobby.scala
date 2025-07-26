@@ -19,6 +19,10 @@ object Lobby:
       commHub ! CommunicationHub.CreateRoomGame(userId, roomName, GameLogic(commHub))
       Behaviors.same
 
-    case LobbyMessage.GameRoomCreated(id, ref) =>
+    case LobbyMessage.GameRoomCreated(id, owner, ref) =>
+      Behaviors.same
+
+    case LobbyMessage.LoggedIn(userId) => 
+      print(s"lobby: user $userId logged ")
       Behaviors.same
   }

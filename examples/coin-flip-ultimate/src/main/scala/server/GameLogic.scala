@@ -12,7 +12,7 @@ object GameLogic {
   case class CoinHead(uid: String) extends RoomMessage
   case class CoinTail(uid: String) extends RoomMessage
 
-  case class GameResult(userId: String, message: String) extends OutgoingMessage {
+  case class GameResult(recipient: String, message: String) extends OutgoingMessage {
     override val tpe: Int = 12
 
     override def data: Json = Json.obj("message" -> message.asJson)

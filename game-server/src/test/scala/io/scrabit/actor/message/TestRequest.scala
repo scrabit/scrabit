@@ -1,4 +1,4 @@
-package io.scrabit.test.actor.message
+package io.scrabit.actor.message
 
 import io.circe.{Json, JsonObject}
 import io.circe.syntax.given

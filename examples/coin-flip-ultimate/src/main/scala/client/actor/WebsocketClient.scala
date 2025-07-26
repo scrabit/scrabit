@@ -27,7 +27,7 @@ object WebsocketClient {
             obj    <- json.asObject
             userId <- obj("userId").flatMap(_.asString)
             tpe    <- obj("tpe").flatMap(_.asNumber).flatMap(_.toInt)
-            data   <- obj("data").flatMap(_.asObject)
+            data   <- obj("payload").flatMap(_.asObject)
           } yield IncomingMessage(userId, tpe, data)
           rawMessage.foreach(msg => logicRef ! msg)
         case _ =>
