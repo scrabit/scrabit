@@ -50,14 +50,27 @@ lazy val ticTacToeTyrianClient =
     .settings(commonSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "io.indigoengine" %%% "tyrian-io"     % "0.11.0",
+        "io.indigoengine" %%% "tyrian-io"     % "0.14.0",
         "io.circe"        %%% "circe-core"    % CirceVersion,
         "io.circe"        %%% "circe-generic" % CirceVersion,
         "io.circe"        %%% "circe-parser"  % CirceVersion
       ),
       scalaJSUseMainModuleInitializer := true,
       scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
-      autoAPIMappings := true
+      autoAPIMappings := true,
+      jsTool := JSToolConfig(
+        installPackagesCommand = Cmd("npm install --prefix examples/tic-tac-toe/tyrian-client", ".*".r),
+        dev = DevConfig(
+          command = Cmd("npm run --prefix examples/tic-tac-toe/tyrian-client dev", ".*ready.*".r),
+          startupMessage = "Starting dev server...",
+          successMessage = "Dev server ready!"
+        ),
+        build = BuildConfig(
+          command = Cmd("npm run --prefix examples/tic-tac-toe/tyrian-client build", ".*built.*".r),
+          startupMessage = "Building for production...",
+          successMessage = "Build complete!"
+        )
+      )
     )
 
 lazy val ticTacToecCommon = (project in file("examples/tic-tac-toe/common"))
