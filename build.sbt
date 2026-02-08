@@ -40,8 +40,65 @@ lazy val ticTacToeServer =
     )
     .dependsOn(gameServer, ticTacToecCommon)
 
-//TODO: add Indigo client
+val IndigoVersion = "0.22.0"
+
 lazy val ticTacToeIndigoClient = (project in file("examples/tic-tac-toe/indigo-client"))
+  .enablePlugins(ScalaJSPlugin, indigoplugin.SbtIndigo)
+  .settings(commonSettings)
+  .settings(
+    name := "tic-tac-toe-indigo-client",
+    libraryDependencies ++= Seq(
+      "io.indigoengine" %%% "indigo"            % IndigoVersion,
+      "io.indigoengine" %%% "indigo-extras"     % IndigoVersion,
+      "io.indigoengine" %%% "indigo-json-circe" % IndigoVersion,
+      "io.circe"        %%% "circe-core"        % CirceVersion,
+      "io.circe"        %%% "circe-generic"     % CirceVersion,
+      "io.circe"        %%% "circe-parser"      % CirceVersion
+    ),
+    Compile / sourceGenerators += Def.task {
+      val cacheDir     = (Compile / sourceManaged).value / "indigo-generated"
+      val base         = os.Path(baseDirectory.value.getCanonicalPath)
+      val assetsDir    = base / "assets"
+      val opts = indigoplugin.IndigoOptions.defaults
+        .withTitle("Tic Tac Toe")
+        .withWindowSize(800, 600)
+        .withBackgroundColor("0x1a1a2e")
+        .withAssetDirectory(os.RelPath.rel / "assets")
+      val assets = opts.assets.copy(
+        gameAssetsDirectory = os.RelPath.rel / "assets"
+      )
+      val generators = indigoplugin.IndigoGenerators("generated")
+        .generateConfig("Config", opts)
+        .embedFont(
+          "GameFont",
+          base / "generator-data" / "PressStart2P.ttf",
+          indigoplugin.FontOptions(
+            "GameFont",
+            16,
+            indigoplugin.CharSet.ASCII,
+            indigoplugin.RGB.White,
+            false,
+            indigoplugin.FontLayout.default
+          ),
+          assetsDir / "generated"
+        )
+        .listAssets("Assets",
+          indigoplugin.IndigoAssets.defaults
+            .withAssetDirectory(os.RelPath.rel / "examples" / "tic-tac-toe" / "indigo-client" / "assets")
+            .withExclude {
+              case p if p.last.startsWith(".") => true
+              case _ => false
+            }
+        )
+      generators.toSourceFiles(cacheDir)
+    },
+    indigoplugin.SbtIndigo.autoImport.indigoOptions :=
+      indigoplugin.IndigoOptions.defaults
+        .withTitle("Tic Tac Toe")
+        .withWindowSize(800, 600)
+        .withBackgroundColor("0x1a1a2e")
+        .withAssetDirectory(os.RelPath.rel / "examples" / "tic-tac-toe" / "indigo-client" / "assets")
+  )
   .dependsOn(ticTacToecCommon)
 
 lazy val ticTacToeTyrianClient =
