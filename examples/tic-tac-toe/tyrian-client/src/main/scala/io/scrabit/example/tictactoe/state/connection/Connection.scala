@@ -32,7 +32,10 @@ enum ConnectionStatus:
     case WebSocketEvent.Open =>
       Msg.Connection(WebSocketMsg.Connected)
     case WebSocketEvent.Close(code, reason) =>
-      Msg.Connection(WebSocketMsg.Error(s"<socket closed> - code: $code, reason: $reason"))
+      if code == 1000 then
+        Msg.Connection(WebSocketMsg.Disconnected(reason))
+      else
+        Msg.Connection(WebSocketMsg.Error(s"<socket closed> - code: $code, reason: $reason"))
     case WebSocketEvent.Heartbeat =>
       Msg.NoOp
   }

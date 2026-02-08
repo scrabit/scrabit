@@ -33,8 +33,8 @@ object ConnectionHandler extends MessageHandler[IO, WebSocketMsg]:
       case WebSocketMsg.Connected =>
         updateConnectionStatus(currentState.connection.toConnected)
           .withNotification("Connected to server", NotificationLevel.Success) -> logDebug("Connected")
-      case WebSocketMsg.Disconnected =>
-        updateConnectionStatus(ConnectionStatus.Disconnected) -> logDebug("Disconnected")
+      case WebSocketMsg.Disconnected(reason) =>
+        updateConnectionStatus(ConnectionStatus.Disconnected) -> logDebug(s"Disconnected: $reason")
       case WebSocketMsg.ReceiveData(value) =>
         handleReceiveData(value, currentState)
       case WebSocketMsg.SendData(data) =>
