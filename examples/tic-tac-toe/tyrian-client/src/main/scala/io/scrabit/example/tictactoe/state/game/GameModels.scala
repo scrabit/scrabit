@@ -28,5 +28,6 @@ case class Game(
     winner: Option[String] = None,
     myMark: Option[Mark] = None
 ):
-  def isGameOver: Boolean = winner.isDefined
+  def isGameOver: Boolean = winner.isDefined || isBoardFull
+  def isBoardFull: Boolean = board.cells.forall(row => row.forall(cell => cell.mark.isDefined))
   def allReady: Boolean = players.nonEmpty && players.forall(_.isReady)
