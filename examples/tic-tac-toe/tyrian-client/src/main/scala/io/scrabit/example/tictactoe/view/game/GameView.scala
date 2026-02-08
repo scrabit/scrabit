@@ -11,7 +11,7 @@ object GameView:
 
   def apply(state: State, game: Game): Html[Msg] =
     if game.isGameOver then gameOverView(state, game)
-    else if game.isStarted then boardView(state, game)
+    else if game.started then boardView(state, game)
     else waitingRoomView(state, game)
 
   private def waitingRoomView(state: State, game: Game): Html[Msg] =

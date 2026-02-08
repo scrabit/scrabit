@@ -24,8 +24,8 @@ case class Game(
     players: List[Player],
     isMyTurn: Boolean,
     board: Board,
+    started: Boolean = false,
     winner: Option[String] = None
 ):
   def isGameOver: Boolean = winner.isDefined
-  def isStarted: Boolean = board.cells.exists(_.exists(_.mark.isDefined))
   def allReady: Boolean = players.nonEmpty && players.forall(_.isReady)
