@@ -17,3 +17,4 @@ examples/tic-tac-toe/tyrian-client/node_modules
 examples/tic-tac-toe/tyrian-client/node_modules
 .vscode
 examples/tic-tac-toe/tyrian-client/.vite/deps
+.cursor/rules

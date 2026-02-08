@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import path from 'path';
-const scalaVersion = '3.7.1'
+const scalaVersion = '3.8.1'
 const scalaProjectName = 'tictactoetyrianclient'
 
 export default defineConfig(({ command }) => {
