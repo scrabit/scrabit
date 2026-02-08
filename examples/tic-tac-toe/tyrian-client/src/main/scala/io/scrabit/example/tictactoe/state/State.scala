@@ -4,17 +4,29 @@ import io.scrabit.example.tictactoe.state.connection.ConnectionStatus
 import io.scrabit.example.tictactoe.state.auth.Session
 import io.scrabit.example.tictactoe.state.auth.LoginFormModel
 import io.scrabit.example.tictactoe.state.game.*
+import io.scrabit.example.tictactoe.state.ui.{Notification, NotificationLevel}
 
 case class State(
   connection: ConnectionStatus,
   session: Option[Session],
   loginForm: LoginFormModel,
   lobby: Option[Lobby],
-  game: Option[Game]
+  game: Option[Game],
+  notification: Option[Notification] = None,
+  loading: Boolean = false
 ):
   def isLoggedIn: Boolean = session.isDefined
   def isInGame: Boolean = game.isDefined
   def username: String = loginForm.username
+
+  def withNotification(msg: String, level: NotificationLevel): State =
+    copy(notification = Some(Notification(msg, level)))
+
+  def clearNotification: State =
+    copy(notification = None)
+
+  def withLoading(value: Boolean): State =
+    copy(loading = value)
 
   def withSession(key: String): State =
     copy(
@@ -40,7 +52,10 @@ case class State(
       case None    => this
       case Some(g) =>
         val myTurn = currentTurn == username
-        copy(game = Some(g.copy(board = board, isMyTurn = myTurn, started = true)))
+        val mark = g.myMark.orElse {
+          if currentTurn == username then Some(Mark.X) else Some(Mark.O)
+        }
+        copy(game = Some(g.copy(board = board, isMyTurn = myTurn, started = true, myMark = mark)))
 
   def withGameResult(winner: Option[String]): State =
     game match

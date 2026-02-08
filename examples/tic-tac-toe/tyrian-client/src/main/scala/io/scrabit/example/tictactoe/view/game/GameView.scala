@@ -57,12 +57,22 @@ object GameView:
         )
     )
 
+  private def markBadge(game: Game): Html[Msg] =
+    game.myMark match
+      case Some(Mark.X) => span(cls := "mark-badge mark-x")("You are: X")
+      case Some(Mark.O) => span(cls := "mark-badge mark-o")("You are: O")
+      case None         => span()()
+
   private def boardView(state: State, game: Game): Html[Msg] =
+    val turnCls = if game.isMyTurn then "turn-indicator your-turn" else "turn-indicator opponent-turn"
+
     div(cls := "game-container")(
       div(cls := "game-header")(
         h2(game.roomName),
-        if game.isMyTurn then p(cls := "ready")("Your turn!")
-        else p(cls := "not-ready")("Opponent's turn...")
+        markBadge(game),
+        p(cls := turnCls)(
+          if game.isMyTurn then "Your turn!" else "Opponent's turn..."
+        )
       ),
       div(cls := "game-board")(
         renderBoard(game.board, game.isMyTurn)
@@ -91,9 +101,13 @@ object GameView:
 
   private def renderCell(cell: Cell, x: Int, y: Int, isMyTurn: Boolean): Html[Msg] =
     val isOccupied = cell.mark.isDefined
-    val cellCls = if isOccupied then "cell occupied" else if isMyTurn then "cell is-primary" else "cell"
+    val markCls = cell.mark match
+      case Some(Mark.X) => " mark-x"
+      case Some(Mark.O) => " mark-o"
+      case None         => ""
+    val baseCls = if isOccupied then "cell occupied" else if isMyTurn then "cell is-primary" else "cell"
     button(
-      cls := cellCls,
+      cls := baseCls + markCls,
       onClick(Msg.Game(GameMsg.MakeMove(x, y))),
       disabled(isOccupied || !isMyTurn)
     )(cell.mark.map(_.toString).getOrElse(""))

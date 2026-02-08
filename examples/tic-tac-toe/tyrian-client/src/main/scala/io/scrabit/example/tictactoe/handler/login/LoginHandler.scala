@@ -16,7 +16,7 @@ object LoginHandler extends MessageHandler[IO, LoginMsg] {
     case LoginMsg.UpdateForm(username, password) =>
       currentState.copy(loginForm = LoginFormModel(username, password )) -> Cmd.None
     case LoginMsg.Submit =>
-      currentState -> login(currentState.loginForm)
+      currentState.withLoading(true) -> login(currentState.loginForm)
   }
 
   private def login(model: LoginFormModel): Cmd[IO,  Msg] = {

@@ -5,6 +5,7 @@ import io.scrabit.example.tictactoe.msg.debug.DebugMsg
 import io.scrabit.example.tictactoe.msg.login.LoginMsg
 import io.scrabit.example.tictactoe.msg.lobby.LobbyMsg
 import io.scrabit.example.tictactoe.msg.game.GameMsg
+import io.scrabit.example.tictactoe.msg.ui.UiMsg
 
 enum Msg:
   case NoOp
@@ -13,3 +14,4 @@ enum Msg:
   case Login(msg: LoginMsg)
   case Lobby(msg: LobbyMsg)
   case Game(msg: GameMsg)
+  case Ui(msg: UiMsg)

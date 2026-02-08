@@ -10,6 +10,7 @@ import io.scrabit.example.tictactoe.state.connection.ConnectionStatus
 import io.scrabit.example.tictactoe.msg.Msg
 import io.scrabit.example.tictactoe.msg.debug.DebugMsg
 import io.scrabit.example.tictactoe.model.ServerMessage
+import io.scrabit.example.tictactoe.state.ui.NotificationLevel
 import cats.effect.IO
 import tyrian.websocket.KeepAliveSettings
 import tyrian.websocket.WebSocket
@@ -26,9 +27,12 @@ object ConnectionHandler extends MessageHandler[IO, WebSocketMsg]:
       case WebSocketMsg.Connecting(ws) =>
         updateConnectionStatus(ConnectionStatus.Connecting(ws)) -> logDebug(s"Connecting to $backendUrl")
       case WebSocketMsg.Error(e) =>
-        updateConnectionStatus(ConnectionStatus.ConnectionError(e)) -> Cmd.Emit(Msg.Debug(DebugMsg(DebugMsg.Level.Error, e)))
+        updateConnectionStatus(ConnectionStatus.ConnectionError(e))
+          .withNotification("Connection error", NotificationLevel.Error)
+          .withLoading(false) -> Cmd.Emit(Msg.Debug(DebugMsg(DebugMsg.Level.Error, e)))
       case WebSocketMsg.Connected =>
-        updateConnectionStatus(currentState.connection.toConnected) -> logDebug("Connected")
+        updateConnectionStatus(currentState.connection.toConnected)
+          .withNotification("Connected to server", NotificationLevel.Success) -> logDebug("Connected")
       case WebSocketMsg.Disconnected =>
         updateConnectionStatus(ConnectionStatus.Disconnected) -> logDebug("Disconnected")
       case WebSocketMsg.ReceiveData(value) =>
@@ -43,10 +47,14 @@ object ConnectionHandler extends MessageHandler[IO, WebSocketMsg]:
   private def handleReceiveData(value: String, state: State): Result =
     ServerMessage.parse(value) match
       case Some(ServerMessage.LoginSuccess(sessionKey)) =>
-        state.withSession(sessionKey) -> logDebug(s"Login success, session: $sessionKey")
+        state.withSession(sessionKey)
+          .withLoading(false)
+          .withNotification("Logged in!", NotificationLevel.Success) -> logDebug(s"Login success, session: $sessionKey")
 
       case Some(ServerMessage.LoginFailed(error)) =>
-        state -> Cmd.Emit(Msg.Debug(DebugMsg(DebugMsg.Level.Error, s"Login failed: $error")))
+        state
+          .withLoading(false)
+          .withNotification(s"Login failed: $error", NotificationLevel.Error) -> Cmd.Emit(Msg.Debug(DebugMsg(DebugMsg.Level.Error, s"Login failed: $error")))
 
       case Some(ServerMessage.LobbyInfo(rooms)) =>
         state.withRooms(rooms) -> logDebug(s"Lobby info: ${rooms.size} rooms")

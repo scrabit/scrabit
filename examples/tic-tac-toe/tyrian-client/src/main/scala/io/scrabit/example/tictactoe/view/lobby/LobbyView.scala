@@ -6,13 +6,18 @@ import io.scrabit.example.tictactoe.state.State
 import io.scrabit.example.tictactoe.state.game.*
 import io.scrabit.example.tictactoe.msg.Msg
 import io.scrabit.example.tictactoe.msg.lobby.LobbyMsg
+import io.scrabit.example.tictactoe.view.components.ConnectionIndicator
+import org.scalajs.dom.KeyboardEvent
 
 object LobbyView:
 
   def apply(state: State, lobby: Lobby): Html[Msg] =
     div(cls := "lobby")(
       div(cls := "room-section")(
-        h2(s"Welcome, ${state.username}!"),
+        div(cls := "lobby-header")(
+          h2(s"Welcome, ${state.username}!"),
+          ConnectionIndicator(state.connection)
+        ),
         h3("Game Lobby"),
         roomList(lobby.rooms),
         createRoomForm(lobby.newRoomName)
@@ -22,6 +27,7 @@ object LobbyView:
   private def roomList(rooms: List[Room]): Html[Msg] =
     if rooms.isEmpty then
       div(cls := "no-rooms nes-container")(
+        i(cls := "nes-icon trophy is-large")(),
         p("No rooms yet. Create one to get started!")
       )
     else
@@ -32,7 +38,9 @@ object LobbyView:
   private def roomItem(room: Room): Html[Msg] =
     div(cls := "room-item nes-container")(
       h4(room.name),
-      p(s"Host: ${room.owner}"),
+      div(cls := "room-meta")(
+        span()(s"Host: ${room.owner}")
+      ),
       div(cls := "lobby-controls")(
         button(
           cls := "nes-btn is-primary",
@@ -52,7 +60,13 @@ object LobbyView:
             cls         := "nes-input",
             placeholder := "Enter room name...",
             value       := newRoomName,
-            onInput(name => Msg.Lobby(LobbyMsg.UpdateNewRoomName(name)))
+            onInput(name => Msg.Lobby(LobbyMsg.UpdateNewRoomName(name))),
+            onEvent[KeyboardEvent, Msg](
+              "keyup",
+              (ke: KeyboardEvent) =>
+                if ke.key == "Enter" && newRoomName.trim.nonEmpty then Msg.Lobby(LobbyMsg.CreateRoom)
+                else Msg.NoOp
+            )
           )
         ),
         div(cls := "lobby-controls")(

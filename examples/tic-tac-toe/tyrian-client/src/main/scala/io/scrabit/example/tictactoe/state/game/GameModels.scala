@@ -25,7 +25,8 @@ case class Game(
     isMyTurn: Boolean,
     board: Board,
     started: Boolean = false,
-    winner: Option[String] = None
+    winner: Option[String] = None,
+    myMark: Option[Mark] = None
 ):
   def isGameOver: Boolean = winner.isDefined
   def allReady: Boolean = players.nonEmpty && players.forall(_.isReady)
