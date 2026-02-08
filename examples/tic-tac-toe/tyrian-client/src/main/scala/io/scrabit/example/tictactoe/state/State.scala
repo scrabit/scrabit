@@ -40,7 +40,7 @@ case class State(
       case None    => this
       case Some(g) =>
         val myTurn = currentTurn == username
-        copy(game = Some(g.copy(board = board, isMyTurn = myTurn)))
+        copy(game = Some(g.copy(board = board, isMyTurn = myTurn, started = true)))
 
   def withGameResult(winner: Option[String]): State =
     game match
