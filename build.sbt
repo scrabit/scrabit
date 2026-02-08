@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion     := "3.6.0"
+ThisBuild / scalaVersion     := "3.8.1"
 ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "io.scrabit"
 ThisBuild / organizationName := "scrabit"
@@ -84,5 +84,5 @@ lazy val coinFlipUltimate = (project in file("examples/coin-flip-ultimate"))
   .dependsOn(gameServer)
 
 lazy val commonSettings = Seq(
-  scalaVersion := "3.7.1"
+  scalaVersion := "3.8.1"
 )
