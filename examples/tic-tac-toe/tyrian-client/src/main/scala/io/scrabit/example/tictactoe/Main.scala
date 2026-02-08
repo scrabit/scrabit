@@ -16,7 +16,6 @@ import io.scrabit.example.tictactoe.view.login.LoginFormView
 import io.scrabit.example.tictactoe.view.lobby.LobbyView
 import io.scrabit.example.tictactoe.view.game.GameView
 import io.scrabit.example.tictactoe.state.connection.ConnectionStatus
-import io.scrabit.example.tictactoe.state.connection.subscribe
 import io.scrabit.example.tictactoe.msg.connection.WebSocketMsg
 import io.scrabit.example.tictactoe.msg.debug.DebugMsg
 
@@ -54,32 +53,4 @@ object Main extends TyrianIOApp[Msg, State]:
           LoginFormView(s)
     )
 
-  def subscriptions(state: State): Sub[IO, Msg] =
-    state.connection match
-      case connecting: ConnectionStatus.Connecting =>
-        connecting.subscribe {
-          case WebSocketEvent.Error(e) =>
-            Msg.Connection(WebSocketMsg.Error(e))
-          case WebSocketEvent.Receive(message) =>
-            Msg.Connection(WebSocketMsg.ReceiveData(message))
-          case WebSocketEvent.Open =>
-            Msg.Connection(WebSocketMsg.Connected)
-          case WebSocketEvent.Close(code, reason) =>
-            Msg.Connection(WebSocketMsg.Error(s"<socket closed> - code: $code, reason: $reason"))
-          case WebSocketEvent.Heartbeat =>
-            Msg.NoOp
-        }
-      case ConnectionStatus.Connected(ws) =>
-        ws.subscribe {
-          case WebSocketEvent.Error(e) =>
-            Msg.Connection(WebSocketMsg.Error(e))
-          case WebSocketEvent.Receive(message) =>
-            Msg.Connection(WebSocketMsg.ReceiveData(message))
-          case WebSocketEvent.Open =>
-            Msg.Connection(WebSocketMsg.Connected)
-          case WebSocketEvent.Close(code, reason) =>
-            Msg.Connection(WebSocketMsg.Error(s"<socket closed> - code: $code, reason: $reason"))
-          case WebSocketEvent.Heartbeat =>
-            Msg.NoOp
-        }
-      case _ => Sub.None
+  def subscriptions(state: State): Sub[IO, Msg] = state.connection.subscribe
